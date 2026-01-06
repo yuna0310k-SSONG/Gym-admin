@@ -36,7 +36,10 @@ export default function MemberForm({
   });
 
   return (
-    <Card title={member ? "회원 정보 수정" : "회원 등록"}>
+    <Card
+      title={member ? "회원 정보 수정" : "회원 등록"}
+      className="bg-[#0f1115]"
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="이름"
@@ -72,6 +75,27 @@ export default function MemberForm({
           {...register("joinDate", { required: "가입일을 선택해주세요" })}
           error={errors.joinDate?.message}
         />
+        {!member && (
+          <div>
+            <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+              상태
+            </label>
+            <select
+              {...register("status")}
+              className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              defaultValue="ACTIVE"
+            >
+              <option value="ACTIVE">활성</option>
+              <option value="INACTIVE">비활성</option>
+              <option value="SUSPENDED">정지</option>
+            </select>
+            {errors.status && (
+              <p className="mt-1 text-sm text-red-400">
+                {errors.status.message}
+              </p>
+            )}
+          </div>
+        )}
         <div className="flex justify-end space-x-3 pt-4">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>

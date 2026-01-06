@@ -23,7 +23,7 @@ interface TableCellProps {
 export function Table({ children, className = "" }: TableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className={`min-w-full divide-y divide-gray-200 ${className}`}>
+      <table className={`min-w-full divide-y divide-[#374151] ${className}`}>
         {children}
       </table>
     </div>
@@ -32,7 +32,7 @@ export function Table({ children, className = "" }: TableProps) {
 
 export function TableHeader({ children }: TableHeaderProps) {
   return (
-    <thead className="bg-gray-50">
+    <thead className="bg-[#1a1d24]">
       <tr>{children}</tr>
     </thead>
   );
@@ -41,7 +41,7 @@ export function TableHeader({ children }: TableHeaderProps) {
 export function TableRow({ children, className = "", onClick }: TableRowProps) {
   return (
     <tr
-      className={`${onClick ? "cursor-pointer hover:bg-gray-50" : ""} ${className}`}
+      className={`${onClick ? "cursor-pointer hover:bg-[#1a1d24]" : ""} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -51,7 +51,7 @@ export function TableRow({ children, className = "", onClick }: TableRowProps) {
 
 export function TableCell({ children, className = "" }: TableCellProps) {
   return (
-    <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${className}`}>
+    <td className={`px-6 py-4 whitespace-nowrap text-sm text-[#e5e7eb] ${className}`}>
       {children}
     </td>
   );
@@ -59,7 +59,7 @@ export function TableCell({ children, className = "" }: TableCellProps) {
 
 export function TableHeaderCell({ children, className = "" }: TableCellProps) {
   return (
-    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}>
+    <th className={`px-6 py-3 text-left text-xs font-medium text-[#9ca3af] uppercase tracking-wider ${className}`}>
       {children}
     </th>
   );

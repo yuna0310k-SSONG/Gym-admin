@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Table, TableHeader, TableHeaderCell, TableRow, TableCell } from "@/components/ui/Table";
+import {
+  Table,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+  TableCell,
+} from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import type { Member } from "@/types/api/responses";
 
@@ -31,16 +37,19 @@ export default function MemberTable({ members }: MemberTableProps) {
         <TableHeaderCell>가입일</TableHeaderCell>
         <TableHeaderCell>상태</TableHeaderCell>
       </TableHeader>
-      <tbody className="bg-white divide-y divide-gray-200">
+      <tbody className="bg-[#0f1115] divide-y divide-[#374151]">
         {members.map((member) => (
           <TableRow
             key={member.id}
             onClick={() => router.push(`/dashboard/members/${member.id}`)}
+            className="hover:bg-[#1a1d24] transition-colors"
           >
-            <TableCell>{member.name}</TableCell>
-            <TableCell>{member.email}</TableCell>
-            <TableCell>{member.phone}</TableCell>
-            <TableCell>{new Date(member.joinDate).toLocaleDateString("ko-KR")}</TableCell>
+            <TableCell className="text-[#e5e7eb]">{member.name}</TableCell>
+            <TableCell className="text-[#9ca3af]">{member.email}</TableCell>
+            <TableCell className="text-[#9ca3af]">{member.phone}</TableCell>
+            <TableCell className="text-[#9ca3af]">
+              {new Date(member.joinDate).toLocaleDateString("ko-KR")}
+            </TableCell>
             <TableCell>{getStatusBadge(member.status)}</TableCell>
           </TableRow>
         ))}
@@ -48,4 +57,3 @@ export default function MemberTable({ members }: MemberTableProps) {
     </Table>
   );
 }
-

@@ -18,33 +18,33 @@ export default function MemberProfile({ member }: MemberProfileProps) {
   };
 
   return (
-    <Card title="회원 정보">
+    <Card title="회원 정보" className="bg-[#0f1115]">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium text-gray-500">이름</label>
-          <p className="mt-1 text-lg text-gray-900">{member.name}</p>
+          <label className="text-sm font-medium text-[#9ca3af]">이름</label>
+          <p className="mt-1 text-lg text-[#f9fafb]">{member.name}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">상태</label>
+          <label className="text-sm font-medium text-[#9ca3af]">상태</label>
           <div className="mt-1">{getStatusBadge(member.status)}</div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">이메일</label>
-          <p className="mt-1 text-gray-900">{member.email}</p>
+          <label className="text-sm font-medium text-[#9ca3af]">이메일</label>
+          <p className="mt-1 text-[#e5e7eb]">{member.email}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">전화번호</label>
-          <p className="mt-1 text-gray-900">{member.phone}</p>
+          <label className="text-sm font-medium text-[#9ca3af]">전화번호</label>
+          <p className="mt-1 text-[#e5e7eb]">{member.phone}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">가입일</label>
-          <p className="mt-1 text-gray-900">
+          <label className="text-sm font-medium text-[#9ca3af]">가입일</label>
+          <p className="mt-1 text-[#e5e7eb]">
             {new Date(member.joinDate).toLocaleDateString("ko-KR")}
           </p>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-500">등록일</label>
-          <p className="mt-1 text-gray-900">
+          <label className="text-sm font-medium text-[#9ca3af]">등록일</label>
+          <p className="mt-1 text-[#e5e7eb]">
             {new Date(member.createdAt).toLocaleDateString("ko-KR")}
           </p>
         </div>

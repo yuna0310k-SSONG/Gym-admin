@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import MemberTable from "@/components/members/MemberTable";
 import Input from "@/components/ui/Input";
 import type { Member } from "@/types/api/responses";
+import { memberApi } from "@/lib/api/members";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -14,32 +15,24 @@ export default function MembersPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // TODO: 실제 API 호출
-    // 임시 데이터
-    const mockMembers: Member[] = [
-      {
-        id: "1",
-        name: "홍길동",
-        email: "hong@example.com",
-        phone: "010-1234-5678",
-        joinDate: "2024-01-15",
-        status: "ACTIVE",
-        createdAt: "2024-01-15T00:00:00Z",
-        updatedAt: "2024-01-15T00:00:00Z",
-      },
-      {
-        id: "2",
-        name: "김철수",
-        email: "kim@example.com",
-        phone: "010-2345-6789",
-        joinDate: "2024-02-20",
-        status: "ACTIVE",
-        createdAt: "2024-02-20T00:00:00Z",
-        updatedAt: "2024-02-20T00:00:00Z",
-      },
-    ];
-    setMembers(mockMembers);
-    setLoading(false);
+    const fetchMembers = async () => {
+      try {
+        // pageSize를 크게 주어 현재 존재하는 모든 회원을 한 번에 가져온다.
+        const data = await memberApi.getMembers(1, 1000);
+        setMembers(data.members);
+      } catch (error) {
+        console.error("회원 목록 조회 실패:", error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : "회원 목록을 불러오지 못했습니다."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
   }, []);
 
   const filteredMembers = members.filter(
@@ -52,7 +45,7 @@ export default function MembersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">로딩 중...</p>
+        <p className="text-[#9ca3af]">로딩 중...</p>
       </div>
     );
   }
@@ -60,13 +53,13 @@ export default function MembersPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">회원 관리</h1>
+        <h1 className="text-3xl font-bold text-[#f9fafb]">회원 관리</h1>
         <Link href="/dashboard/members/new">
           <Button variant="primary">새 회원 등록</Button>
         </Link>
       </div>
 
-      <Card className="mb-6">
+      <Card className="mb-6 bg-[#0f1115]">
         <Input
           label="검색"
           placeholder="이름, 이메일, 전화번호로 검색..."
@@ -75,10 +68,10 @@ export default function MembersPage() {
         />
       </Card>
 
-      <Card>
+      <Card className="bg-[#0f1115]">
         {filteredMembers.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">회원이 없습니다.</p>
+            <p className="text-[#9ca3af]">회원이 없습니다.</p>
           </div>
         ) : (
           <MemberTable members={filteredMembers} />

@@ -37,4 +37,3 @@ export const insightApi = {
     throw new Error("Failed to fetch risk members");
   },
 };
-

@@ -36,7 +36,59 @@ export default function RegisterPage() {
 
     try {
       const { confirmPassword, ...registerData } = data;
-      await authApi.register(registerData);
+      const registerResponse = await authApi.register(registerData);
+
+      // 트레이너로 회원가입한 경우 자동 로그인 시도
+      if (registerData.role === "TRAINER") {
+        try {
+          const loginResponse = await authApi.login({
+            email: registerData.email,
+            password: registerData.password,
+          });
+
+          // 토큰 저장
+          const token =
+            loginResponse.data.token ||
+            (loginResponse.data as any).accessToken ||
+            (loginResponse as any).token ||
+            (loginResponse as any).accessToken;
+          if (token) {
+            localStorage.setItem("accessToken", token);
+            localStorage.setItem("token", token);
+          }
+
+          // 사용자 정보 저장
+          if (loginResponse.data.user) {
+            localStorage.setItem(
+              "user",
+              JSON.stringify(loginResponse.data.user)
+            );
+
+            // 트레이너이고 승인되지 않은 경우 모두 승인 대기 페이지로 리다이렉트
+            const user = loginResponse.data.user;
+            if (
+              user.role === "TRAINER" &&
+              (user.isApproved === false ||
+                user.isApproved === undefined ||
+                user.isApproved === null)
+            ) {
+              router.push("/dashboard/approval-pending");
+              return;
+            }
+          }
+
+          // 승인된 트레이너는 일반 대시보드로
+          router.push("/dashboard/members");
+          return;
+        } catch (loginError) {
+          // 자동 로그인 실패 시 로그인 페이지로 이동
+          console.warn("자동 로그인 실패, 로그인 페이지로 이동:", loginError);
+          router.push("/login?registered=true");
+          return;
+        }
+      }
+
+      // 트레이너가 아닌 경우 로그인 페이지로 이동
       router.push("/login?registered=true");
     } catch (err) {
       setError(
@@ -152,9 +204,7 @@ export default function RegisterPage() {
                   focus:ring-1 focus:ring-[#6b7280]
                 "
               >
-                <option value="MEMBER">회원</option>
                 <option value="TRAINER">트레이너</option>
-                <option value="ADMIN">관리자</option>
               </select>
             </div>
 

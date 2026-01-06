@@ -10,6 +10,7 @@ export interface LoginResponse {
       email: string;
       name: string;
       role: string;
+      isApproved?: boolean; // 트레이너의 경우 승인 여부
     };
     token?: string;
   };
@@ -36,11 +37,30 @@ export const authApi = {
         "/api/auth/login",
         data
       );
-      
+
+      // 디버깅: 응답 구조 확인
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Auth API] Login response:", response);
+      }
+
       if ("data" in response) {
+        // 토큰이 data 안에 있는지, 또는 최상위에 있는지 확인 (accessToken도 확인)
+        const token =
+          (response.data as any).token ||
+          (response.data as any).accessToken ||
+          (response as any).token ||
+          (response as any).accessToken;
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Auth API] Token found:", !!token);
+        }
+
         return {
           success: true,
-          data: response.data,
+          data: {
+            ...response.data,
+            token: token || response.data.token,
+          },
         };
       }
       throw new Error("로그인에 실패했습니다.");
@@ -58,17 +78,18 @@ export const authApi = {
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     try {
-      // provider 필드가 없으면 기본값 "local" 설정
+      // 백엔드 스펙에 맞게 필요한 필드만 전송
       const registerData = {
-        ...data,
-        provider: data.provider || "local",
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        role: data.role,
       };
-      
-      const response = await apiClient.post<ApiResponse<RegisterResponse["data"]>>(
-        "/api/auth/register",
-        registerData
-      );
-      
+
+      const response = await apiClient.post<
+        ApiResponse<RegisterResponse["data"]>
+      >("/api/auth/register", registerData);
+
       if ("data" in response) {
         return {
           success: true,
@@ -80,12 +101,20 @@ export const authApi = {
       // 에러 처리
       if (error instanceof Error) {
         // 400 에러 처리 (이미 등록된 이메일)
-        if (error.message.includes("400") || error.message.includes("이미 등록")) {
+        if (
+          error.message.includes("400") ||
+          error.message.includes("이미 등록")
+        ) {
           throw new Error("이미 등록된 이메일입니다.");
         }
         // 500 에러 처리 (서버 오류)
-        if (error.message.includes("500") || error.message.includes("서버 오류")) {
-          throw new Error("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        if (
+          error.message.includes("500") ||
+          error.message.includes("서버 오류")
+        ) {
+          throw new Error(
+            "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+          );
         }
         throw error;
       }
@@ -99,7 +128,10 @@ export const authApi = {
     } catch (error) {
       // CORS 에러나 기타 에러가 발생해도 로그아웃은 진행
       // 클라이언트 측 토큰 삭제는 항상 수행
-      console.warn("Logout API error (continuing with client-side logout):", error);
+      console.warn(
+        "Logout API error (continuing with client-side logout):",
+        error
+      );
     }
   },
 
@@ -124,4 +156,3 @@ export const authApi = {
     }
   },
 };
-

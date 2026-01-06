@@ -22,6 +22,12 @@ export const memberApi = {
     const response = await apiClient.get<ApiResponse<MemberResponse>>(
       `/api/members/${id}`
     );
+    
+    // 디버깅용 로그
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Member API] getMember response:", response);
+    }
+    
     if ("data" in response) {
       return response.data;
     }

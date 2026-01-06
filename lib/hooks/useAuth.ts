@@ -9,6 +9,7 @@ interface User {
   email: string;
   name: string;
   role: string;
+  isApproved?: boolean; // 트레이너의 경우 승인 여부
 }
 
 interface AuthState {
@@ -60,6 +61,7 @@ export function useAuth() {
     } catch (error) {
       // 401 에러 또는 세션 없음
       localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
       localStorage.removeItem("token");
       setAuthState({
         user: null,
@@ -72,6 +74,8 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
     if (response.data.token) {
+      // accessToken과 token 둘 다 저장 (호환성을 위해)
+      localStorage.setItem("accessToken", response.data.token);
       localStorage.setItem("token", response.data.token);
     }
     localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -86,9 +90,10 @@ export function useAuth() {
   const logout = async () => {
     // 서버에 로그아웃 요청 (실패해도 클라이언트 측 정리는 진행)
     await authApi.logout();
-    
+
     // 클라이언트 측 토큰 및 사용자 정보 삭제 (항상 수행)
     localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("token");
     setAuthState({
       user: null,
@@ -104,4 +109,3 @@ export function useAuth() {
     checkSession,
   };
 }
-

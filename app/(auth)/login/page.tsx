@@ -31,11 +31,40 @@ export default function LoginPage() {
     try {
       const response = await authApi.login({ email, password });
 
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      // 토큰 저장 (여러 위치에서 시도)
+      const token =
+        response.data.token ||
+        (response.data as any).accessToken ||
+        (response as any).token ||
+        (response as any).accessToken;
+      if (token) {
+        // accessToken과 token 둘 다 저장 (호환성을 위해)
+        localStorage.setItem("accessToken", token);
+        localStorage.setItem("token", token);
+        console.log("[Login Page] Token saved to localStorage");
+      } else {
+        console.warn("[Login Page] No token in response:", response);
       }
-      localStorage.setItem("user", JSON.stringify(response.data.user));
 
+      // 사용자 정보 저장
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        // 트레이너인 경우 승인 여부가 true가 아니면 모두 승인 대기 페이지로 보냄
+        const user = response.data.user;
+        if (user.role === "TRAINER") {
+          if (
+            user.isApproved === false ||
+            user.isApproved === undefined ||
+            user.isApproved === null
+          ) {
+            router.push("/dashboard/approval-pending");
+            return;
+          }
+        }
+      }
+
+      // 그 외의 경우 (ADMIN, MEMBER, 또는 승인된 TRAINER)는 일반 대시보드로
       router.push("/dashboard/members");
     } catch (err) {
       setError(
