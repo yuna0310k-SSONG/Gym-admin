@@ -1,7 +1,25 @@
 "use client";
 
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Radar } from "react-chartjs-2";
 import Card from "@/components/ui/Card";
+
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
 
 interface AbilityHexagonData {
   strength?: number; // 하체 근력
@@ -26,51 +44,109 @@ export default function AbilityHexagon({
   const toNumber = (value: number | null | undefined) =>
     typeof value === "number" && !Number.isNaN(value) ? value : 0;
 
-  // 데이터를 차트 형식으로 변환 (undefined 안전 처리)
-  const chartData = [
-    { indicator: "하체 근력", value: toNumber(data.strength), fullMark: 100 },
-    { indicator: "심폐 지구력", value: toNumber(data.cardio), fullMark: 100 },
-    { indicator: "근지구력", value: toNumber(data.endurance), fullMark: 100 },
-    { indicator: "유연성", value: toNumber(data.flexibility), fullMark: 100 },
-    { indicator: "체성분 밸런스", value: toNumber(data.body), fullMark: 100 },
-    { indicator: "부상 안정성", value: toNumber(data.stability), fullMark: 100 },
+  // 차트 데이터 구성
+  const chartData = {
+    labels: [
+      "하체 근력",
+      "심폐 지구력",
+      "근지구력",
+      "유연성",
+      "체성분 밸런스",
+      "부상 안정성",
+    ],
+    datasets: [
+      {
+        label: "능력치",
+        data: [
+          toNumber(data.strength),
+          toNumber(data.cardio),
+          toNumber(data.endurance),
+          toNumber(data.flexibility),
+          toNumber(data.body),
+          toNumber(data.stability),
+        ],
+        backgroundColor: "rgba(59, 130, 246, 0.2)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 2,
+        pointBackgroundColor: "rgba(59, 130, 246, 1)",
+        pointBorderColor: "#fff",
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: "rgba(59, 130, 246, 1)",
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        min: 0,
+        ticks: {
+          stepSize: 20,
+          color: "#9ca3af",
+          font: {
+            size: 10,
+          },
+          backdropColor: "transparent",
+        },
+        grid: {
+          color: "#374151",
+        },
+        pointLabels: {
+          color: "#c9c7c7",
+          font: {
+            size: 12,
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "rgba(15, 17, 21, 0.9)",
+        titleColor: "#c9c7c7",
+        bodyColor: "#fff",
+        borderColor: "#374151",
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: function (context: any) {
+            return `${context.label}: ${context.parsed.r.toFixed(1)}`;
+          },
+        },
+      },
+    },
+  };
+
+  const indicatorData = [
+    { label: "하체 근력", value: toNumber(data.strength) },
+    { label: "심폐 지구력", value: toNumber(data.cardio) },
+    { label: "근지구력", value: toNumber(data.endurance) },
+    { label: "유연성", value: toNumber(data.flexibility) },
+    { label: "체성분 밸런스", value: toNumber(data.body) },
+    { label: "부상 안정성", value: toNumber(data.stability) },
   ];
 
   return (
     <Card title={title} className="bg-[#0f1115]">
       <div className="w-full h-[400px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={chartData}>
-            <PolarGrid stroke="#374151" />
-            <PolarAngleAxis
-              dataKey="indicator"
-              tick={{ fill: "#c9c7c7", fontSize: 12 }}
-              className="text-[#c9c7c7]"
-            />
-            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "#9ca3af", fontSize: 10 }} />
-            <Radar
-              name="능력치"
-              dataKey="value"
-              stroke="#3b82f6"
-              fill="#3b82f6"
-              fillOpacity={0.6}
-              strokeWidth={2}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
+        <Radar data={chartData} options={chartOptions} />
       </div>
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-        {chartData.map((item) => {
-          const safeValue = toNumber(item.value);
-          return (
-            <div key={item.indicator} className="flex items-center justify-between">
-              <span className="text-[#c9c7c7]">{item.indicator}:</span>
-              <span className="text-white font-semibold">
-                {safeValue.toFixed(1)}
-              </span>
-            </div>
-          );
-        })}
+        {indicatorData.map((item) => (
+          <div key={item.label} className="flex items-center justify-between">
+            <span className="text-[#c9c7c7]">{item.label}:</span>
+            <span className="text-white font-semibold">
+              {item.value.toFixed(1)}
+            </span>
+          </div>
+        ))}
       </div>
     </Card>
   );

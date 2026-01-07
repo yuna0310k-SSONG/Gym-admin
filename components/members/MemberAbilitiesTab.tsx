@@ -128,6 +128,10 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
               <p className="text-white text-xl font-semibold">{latestData.enduranceScore.toFixed(1)}</p>
             </div>
             <div>
+              <span className="text-[#c9c7c7] text-sm">유연성 점수</span>
+              <p className="text-white text-xl font-semibold">{latestData.flexibilityScore.toFixed(1)}</p>
+            </div>
+            <div>
               <span className="text-[#c9c7c7] text-sm">신체 점수</span>
               <p className="text-white text-xl font-semibold">{latestData.bodyScore.toFixed(1)}</p>
             </div>
@@ -152,6 +156,7 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
                 strengthScore: "근력 점수",
                 cardioScore: "심폐 점수",
                 enduranceScore: "지구력 점수",
+                flexibilityScore: "유연성 점수",
                 bodyScore: "신체 점수",
                 stabilityScore: "안정성 점수",
               };
@@ -204,4 +209,5 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
     </div>
   );
 }
+
 

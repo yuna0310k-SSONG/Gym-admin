@@ -11,8 +11,12 @@ import { useRouter } from "next/navigation";
 export default function TrainersPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [pendingTrainers, setPendingTrainers] = useState<TrainerApprovalRequest[]>([]);
-  const [approvedTrainers, setApprovedTrainers] = useState<TrainerApprovalRequest[]>([]);
+  const [pendingTrainers, setPendingTrainers] =
+    useState<TrainerApprovalRequest[]>([]);
+  const [approvedTrainers, setApprovedTrainers] =
+    useState<TrainerApprovalRequest[]>([]);
+  const [rejectedTrainers, setRejectedTrainers] =
+    useState<TrainerApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,20 +50,28 @@ export default function TrainersPage() {
         console.log("[Trainers Page] All trainers:", allData);
       }
 
-      // 승인 대기 트레이너: pending-trainers API에서 받은 목록
-      const pending = pendingData?.trainers || [];
-      
-      // 승인된 트레이너: 전체 목록에서 isApproved === true인 트레이너만 필터링
-      const approved = (allData?.trainers || []).filter(
-        (t) => t.isApproved === true
+      // 승인 대기 트레이너: pending-trainers API에서 받은 목록 중
+      // 한 번도 거부되지 않은 계정만 (isApproved가 설정되지 않은 경우)
+      const pending = (pendingData?.trainers || []).filter(
+        (t) => t.isApproved === undefined || t.isApproved === null
       );
+
+      const all = allData?.trainers || [];
+
+      // 승인된 트레이너: 전체 목록에서 isApproved === true인 트레이너만 필터링
+      const approved = all.filter((t) => t.isApproved === true);
+
+      // 거부된 트레이너: 전체 목록에서 isApproved === false인 트레이너
+      const rejected = all.filter((t) => t.isApproved === false);
 
       setPendingTrainers(pending);
       setApprovedTrainers(approved);
+      setRejectedTrainers(rejected);
     } catch (error) {
       console.error("트레이너 목록 조회 실패:", error);
       setPendingTrainers([]);
       setApprovedTrainers([]);
+      setRejectedTrainers([]);
       alert(
         error instanceof Error
           ? error.message
@@ -140,7 +152,7 @@ export default function TrainersPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white">트레이너 관리</h1>
         <p className="text-[#9ca3af] mt-2">
-          승인 대기 중인 트레이너를 승인하거나, 이미 승인된 트레이너를 제한할 수 있습니다.
+          승인 대기 / 승인된 / 거부된 트레이너를 한 곳에서 관리할 수 있습니다.
         </p>
       </div>
 
@@ -199,7 +211,9 @@ export default function TrainersPage() {
 
       {/* 승인된 트레이너 목록 */}
       <Card className="bg-[#0f1115]">
-        <h2 className="text-xl font-semibold text-white mb-4">전체 트레이너 상태</h2>
+        <h2 className="text-xl font-semibold text-white mb-4">
+          승인된 트레이너
+        </h2>
         {approvedTrainers.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-[#9ca3af]">승인된 트레이너가 없습니다.</p>
@@ -239,6 +253,61 @@ export default function TrainersPage() {
                       onClick={() => handleDisapprove(trainer.id)}
                     >
                       승인 취소
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* 거부된 트레이너 목록 */}
+      <Card className="bg-[#0f1115] mt-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
+          거부된 트레이너
+        </h2>
+        {rejectedTrainers.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-[#9ca3af]">거부된 트레이너가 없습니다.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {rejectedTrainers.map((trainer) => (
+              <div
+                key={trainer.id}
+                className="p-4 bg-[#1a1d24] rounded-lg border border-[#374151]"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-white">
+                        {trainer.name}
+                      </h3>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                        거부됨
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-[#9ca3af]">
+                        <span className="text-[#c9c7c7]">이메일:</span>{" "}
+                        {trainer.email}
+                      </p>
+                      <p className="text-[#9ca3af]">
+                        <span className="text-[#c9c7c7]">가입일:</span>{" "}
+                        {new Date(trainer.createdAt).toLocaleDateString(
+                          "ko-KR"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 ml-4">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleApprove(trainer.id)}
+                    >
+                      다시 승인
                     </Button>
                   </div>
                 </div>

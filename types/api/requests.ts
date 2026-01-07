@@ -81,3 +81,102 @@ export interface UpdateAssessmentRequest {
   condition?: "EXCELLENT" | "GOOD" | "NORMAL" | "POOR";
   items?: CreateAssessmentItemRequest[];
 }
+
+// 목표 관리 관련 요청
+export interface CreateMemberGoalRequest {
+  goal: string;
+  goalProgress?: number; // 0-100, 기본값 0
+  goalTrainerComment?: string;
+}
+
+export interface UpdateMemberGoalRequest {
+  goal?: string;
+  goalProgress?: number; // 0-100
+  goalTrainerComment?: string;
+}
+
+// PT 세션 관련 요청
+export interface CreatePTSessionRequest {
+  sessionDate: string;
+  mainContent?: string;
+  trainerComment?: string;
+}
+
+export interface UpdatePTSessionRequest {
+  sessionDate?: string;
+  mainContent?: string;
+  trainerComment?: string;
+}
+
+// 운동 기록 관련 요청
+export interface CreateWorkoutRecordRequest {
+  workoutDate: string;
+  exerciseName: string;
+  bodyPart: string;
+  weight?: number;
+  reps?: number;
+  sets?: number;
+  duration?: number;
+  sessionType: "PT" | "SELF";
+  ptSessionId?: string;
+  trainerComment?: string;
+}
+
+export interface UpdateWorkoutRecordRequest {
+  workoutDate?: string;
+  exerciseName?: string;
+  bodyPart?: string;
+  weight?: number;
+  reps?: number;
+  sets?: number;
+  duration?: number;
+  sessionType?: "PT" | "SELF";
+  ptSessionId?: string;
+  trainerComment?: string;
+}
+
+// 운동 기록 분석 요청
+export interface WorkoutVolumeAnalysisRequest {
+  period?: "WEEKLY" | "MONTHLY"; // 둘 다 조회 시 생략
+  startDate?: string; // 기본값: 현재 주/월 시작
+  endDate?: string; // 기본값: 현재 주/월 끝
+}
+
+// 운동 캘린더 요청
+export interface WorkoutCalendarRequest {
+  startDate: string;
+  endDate: string;
+}
+
+// 추천 운동 루틴 관련 요청
+export interface CreateWorkoutRoutineRequest {
+  routineName: string;
+  exercises: Array<{
+    exerciseName: string;
+    bodyPart: string;
+    sets?: number;
+    reps?: number;
+    weight?: number;
+    duration?: number;
+    restTime?: number;
+    notes?: string;
+  }>;
+  estimatedDuration: number;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+}
+
+export interface UpdateWorkoutRoutineRequest {
+  routineName?: string;
+  exercises?: Array<{
+    exerciseName: string;
+    bodyPart: string;
+    sets?: number;
+    reps?: number;
+    weight?: number;
+    duration?: number;
+    restTime?: number;
+    notes?: string;
+  }>;
+  estimatedDuration?: number;
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+}

@@ -9,7 +9,9 @@ interface MemberAnalyticsTabProps {
   memberId: string;
 }
 
-export default function MemberAnalyticsTab({ memberId }: MemberAnalyticsTabProps) {
+export default function MemberAnalyticsTab({
+  memberId,
+}: MemberAnalyticsTabProps) {
   const { data: memberAnalytics, isLoading: memberLoading } = useQuery({
     queryKey: ["analytics", "member", memberId],
     queryFn: () => analyticsApi.getMemberAnalytics(memberId),
@@ -61,13 +63,18 @@ export default function MemberAnalyticsTab({ memberId }: MemberAnalyticsTabProps
                 strengthScore: "근력",
                 cardioScore: "심폐",
                 enduranceScore: "지구력",
+                flexibilityScore: "유연성",
                 bodyScore: "신체",
                 stabilityScore: "안정성",
               };
               return (
                 <div key={key} className="p-4 bg-[#1a1d24] rounded-lg">
-                  <span className="text-[#c9c7c7] text-sm block mb-2">{labels[key]}</span>
-                  <p className="text-white text-xl font-semibold">{value.toFixed(1)}%</p>
+                  <span className="text-[#c9c7c7] text-sm block mb-2">
+                    {labels[key]}
+                  </span>
+                  <p className="text-white text-xl font-semibold">
+                    {value.toFixed(1)}%
+                  </p>
                 </div>
               );
             })}
@@ -99,6 +106,12 @@ export default function MemberAnalyticsTab({ memberId }: MemberAnalyticsTabProps
                 percentile: comparisonData.percentile.enduranceScore,
               },
               {
+                label: "유연성",
+                member: comparisonData.member.flexibilityScore,
+                average: comparisonData.average.flexibilityScore,
+                percentile: comparisonData.percentile.flexibilityScore,
+              },
+              {
                 label: "신체",
                 member: comparisonData.member.bodyScore,
                 average: comparisonData.average.bodyScore,
@@ -122,27 +135,45 @@ export default function MemberAnalyticsTab({ memberId }: MemberAnalyticsTabProps
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <span className="text-[#c9c7c7] text-sm">종합 점수</span>
-              <p className="text-white text-2xl font-bold">{averagesData.totalScore.toFixed(1)}</p>
+              <p className="text-white text-2xl font-bold">
+                {averagesData.totalScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">근력 점수</span>
-              <p className="text-white text-xl font-semibold">{averagesData.strengthScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.strengthScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">심폐 점수</span>
-              <p className="text-white text-xl font-semibold">{averagesData.cardioScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.cardioScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">지구력 점수</span>
-              <p className="text-white text-xl font-semibold">{averagesData.enduranceScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.enduranceScore.toFixed(1)}
+              </p>
+            </div>
+            <div>
+              <span className="text-[#c9c7c7] text-sm">유연성 점수</span>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.flexibilityScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">신체 점수</span>
-              <p className="text-white text-xl font-semibold">{averagesData.bodyScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.bodyScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">안정성 점수</span>
-              <p className="text-white text-xl font-semibold">{averagesData.stabilityScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {averagesData.stabilityScore.toFixed(1)}
+              </p>
             </div>
           </div>
           <p className="text-[#c9c7c7] text-sm mt-4">
@@ -153,4 +184,3 @@ export default function MemberAnalyticsTab({ memberId }: MemberAnalyticsTabProps
     </div>
   );
 }
-

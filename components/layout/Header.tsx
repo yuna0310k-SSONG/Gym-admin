@@ -15,33 +15,40 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#0f1115] shadow-sm border-b border-[#374151]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/dashboard/members" className="text-xl font-bold text-[#f9fafb]">
-            헬스장 회원관리
-          </Link>
-          <nav className="flex items-center space-x-4">
+    <header className="bg-[#0f1115] border-b border-[#374151]">
+      <div className="px-6">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="flex justify-between items-center h-16">
             <Link
               href="/dashboard/members"
-              className="text-[#9ca3af] hover:text-[#e5e7eb] px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="text-xl font-bold text-[#f9fafb]"
             >
-              회원 관리
+              헬스장 회원관리
             </Link>
-            {isAuthenticated && user && (
-              <span className="text-sm text-[#9ca3af]">
-                {user.name} ({user.role})
-              </span>
-            )}
-            {isAuthenticated && (
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                로그아웃
-              </Button>
-            )}
-          </nav>
+
+            <nav className="flex items-center space-x-4">
+              <Link
+                href="/dashboard/members"
+                className="text-[#9ca3af] hover:text-[#e5e7eb] px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                회원 관리
+              </Link>
+
+              {isAuthenticated && user && (
+                <span className="text-sm text-[#9ca3af]">
+                  {user.name} ({user.role})
+                </span>
+              )}
+
+              {isAuthenticated && (
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  로그아웃
+                </Button>
+              )}
+            </nav>
+          </div>
         </div>
       </div>
     </header>
   );
 }
-

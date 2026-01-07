@@ -19,37 +19,42 @@ export default function MemberProfile({ member }: MemberProfileProps) {
 
   return (
     <Card title="회원 정보" className="bg-[#0f1115]">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">이름</label>
-          <p className="mt-1 text-lg text-[#f9fafb]">{member.name}</p>
+      <div className="space-y-6">
+        {/* 이름 및 상태 */}
+        <div className="flex items-center justify-between pb-4 border-b border-[#374151]">
+          <div>
+            <p className="text-2xl font-bold text-white">{member.name}</p>
+            <p className="text-sm text-[#9ca3af] mt-1">{member.email}</p>
+          </div>
+          {getStatusBadge(member.status)}
         </div>
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">상태</label>
-          <div className="mt-1">{getStatusBadge(member.status)}</div>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">이메일</label>
-          <p className="mt-1 text-[#e5e7eb]">{member.email}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">전화번호</label>
-          <p className="mt-1 text-[#e5e7eb]">{member.phone}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">가입일</label>
-          <p className="mt-1 text-[#e5e7eb]">
-            {new Date(member.joinDate).toLocaleDateString("ko-KR")}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-[#9ca3af]">등록일</label>
-          <p className="mt-1 text-[#e5e7eb]">
-            {new Date(member.createdAt).toLocaleDateString("ko-KR")}
-          </p>
+
+        {/* 상세 정보 */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm font-medium text-[#9ca3af]">전화번호</label>
+            <p className="mt-1 text-[#e5e7eb]">{member.phone}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#9ca3af]">가입일</label>
+            <p className="mt-1 text-[#e5e7eb]">
+              {new Date(member.joinDate).toLocaleDateString("ko-KR")}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#9ca3af]">등록일</label>
+            <p className="mt-1 text-[#e5e7eb]">
+              {new Date(member.createdAt).toLocaleDateString("ko-KR")}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#9ca3af]">최근 수정</label>
+            <p className="mt-1 text-[#e5e7eb]">
+              {new Date(member.updatedAt).toLocaleDateString("ko-KR")}
+            </p>
+          </div>
         </div>
       </div>
     </Card>
   );
 }
-

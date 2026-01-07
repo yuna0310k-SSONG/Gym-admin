@@ -10,6 +10,10 @@ import Tabs from "@/components/ui/Tabs";
 import MemberAbilitiesTab from "@/components/members/MemberAbilitiesTab";
 import MemberInjuriesTab from "@/components/members/MemberInjuriesTab";
 import MemberAnalyticsTab from "@/components/members/MemberAnalyticsTab";
+import MemberGoalCard from "@/components/members/MemberGoalCard";
+import MemberPTSessionProgress from "@/components/members/MemberPTSessionProgress";
+import WorkoutCalendar from "@/components/members/WorkoutCalendar";
+import WorkoutVolumeAnalysis from "@/components/members/WorkoutVolumeAnalysis";
 import type { Member } from "@/types/api/responses";
 import { memberApi } from "@/lib/api/members";
 
@@ -30,17 +34,16 @@ export default function MemberDetailPage() {
       try {
         setLoading(true);
         const data = await memberApi.getMember(params.id as string);
-        
+
         // 디버깅용 로그
         if (process.env.NODE_ENV === "development") {
           console.log("[Member Detail] Fetched member data:", data);
         }
-        
+
         setMember(data);
       } catch (error) {
         console.error("회원 조회 실패:", error);
         setMember(null);
-        // 에러는 콘솔에만 남기고, UI에서는 "회원을 찾을 수 없습니다" 메시지 표시
       } finally {
         setLoading(false);
       }
@@ -75,6 +78,11 @@ export default function MemberDetailPage() {
       content: <MemberAbilitiesTab memberId={member.id} />,
     },
     {
+      id: "workout-analysis",
+      label: "운동 분석",
+      content: <WorkoutVolumeAnalysis memberId={member.id} />,
+    },
+    {
       id: "injuries",
       label: "부상 관리",
       content: <MemberInjuriesTab memberId={member.id} />,
@@ -87,8 +95,9 @@ export default function MemberDetailPage() {
   ];
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+      {/* 헤더 */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <Link
             href="/dashboard/members"
@@ -96,9 +105,11 @@ export default function MemberDetailPage() {
           >
             ← 목록으로 돌아가기
           </Link>
-          <h1 className="text-3xl font-bold text-white">{member.name} 회원 상세</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            {member.name} 회원 상세
+          </h1>
         </div>
-        <div className="space-x-3">
+        <div className="flex space-x-3">
           <Link href={`/dashboard/members/${member.id}/edit`}>
             <Button variant="primary">수정</Button>
           </Link>
@@ -106,40 +117,30 @@ export default function MemberDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-1">
-          <MemberProfile member={member} />
-        </div>
-        <div className="lg:col-span-2">
-          <Card title="기본 정보" className="bg-[#0f1115]">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-[#c9c7c7] text-sm">이메일</span>
-                <p className="text-white font-semibold">{member.email}</p>
-              </div>
-              <div>
-                <span className="text-[#c9c7c7] text-sm">전화번호</span>
-                <p className="text-white font-semibold">{member.phone}</p>
-              </div>
-              <div>
-                <span className="text-[#c9c7c7] text-sm">가입일</span>
-                <p className="text-white font-semibold">
-                  {new Date(member.joinDate).toLocaleDateString("ko-KR")}
-                </p>
-              </div>
-              <div>
-                <span className="text-[#c9c7c7] text-sm">상태</span>
-                <p className="text-white font-semibold">{member.status}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
+      {/* 목표 관리 (카드 없이) */}
+      <section>
+        <MemberGoalCard memberId={member.id} />
+      </section>
 
-      <Card className="bg-[#0f1115]">
-        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      </Card>
+      {/* 회원 정보 + 운동 캘린더 */}
+      <section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <MemberProfile member={member} />
+          <WorkoutCalendar memberId={member.id} />
+        </div>
+      </section>
+
+      {/* PT 진행률 */}
+      <section>
+        <MemberPTSessionProgress memberId={member.id} />
+      </section>
+
+      {/* 탭 콘텐츠 */}
+      <section>
+        <Card className="bg-[#0f1115]">
+          <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+        </Card>
+      </section>
     </div>
   );
 }
-

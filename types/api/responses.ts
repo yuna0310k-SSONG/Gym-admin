@@ -78,11 +78,12 @@ export interface AbilitySnapshot {
   assessmentId: string;
   memberId: string;
   assessedAt: string;
-  strengthScore: number;
-  cardioScore: number;
-  enduranceScore: number;
-  bodyScore: number;
-  stabilityScore: number;
+  strengthScore: number; // 하체 근력
+  cardioScore: number; // 심폐 지구력
+  enduranceScore: number; // 근지구력
+  flexibilityScore: number; // 유연성
+  bodyScore: number; // 체성분 밸런스
+  stabilityScore: number; // 부상 안정성
   totalScore: number;
   createdAt: string;
 }
@@ -102,6 +103,7 @@ export interface AbilityComparisonResponse {
     strengthScore: number;
     cardioScore: number;
     enduranceScore: number;
+    flexibilityScore: number;
     bodyScore: number;
     stabilityScore: number;
   };
@@ -110,6 +112,7 @@ export interface AbilityComparisonResponse {
     strengthScore: number;
     cardioScore: number;
     enduranceScore: number;
+    flexibilityScore: number;
     bodyScore: number;
     stabilityScore: number;
   };
@@ -169,6 +172,7 @@ export interface MemberAnalyticsResponse {
     strengthScore: number;
     cardioScore: number;
     enduranceScore: number;
+    flexibilityScore: number;
     bodyScore: number;
     stabilityScore: number;
     totalScore: number;
@@ -179,6 +183,7 @@ export interface AverageAnalyticsResponse {
   strengthScore: number;
   cardioScore: number;
   enduranceScore: number;
+  flexibilityScore: number;
   bodyScore: number;
   stabilityScore: number;
   totalScore: number;
@@ -191,6 +196,7 @@ export interface MemberComparisonResponse {
     strengthScore: number;
     cardioScore: number;
     enduranceScore: number;
+    flexibilityScore: number;
     bodyScore: number;
     stabilityScore: number;
     totalScore: number;
@@ -199,6 +205,7 @@ export interface MemberComparisonResponse {
     strengthScore: number;
     cardioScore: number;
     enduranceScore: number;
+    flexibilityScore: number;
     bodyScore: number;
     stabilityScore: number;
     totalScore: number;
@@ -238,4 +245,124 @@ export interface AssessmentListResponse {
 }
 
 export interface AssessmentResponse extends Assessment {}
+
+// 목표 관리 관련 응답
+export interface MemberGoal {
+  id: string;
+  memberId: string;
+  goal: string; // 목표 한줄 요약
+  goalProgress: number; // 달성률/진행률 (0-100)
+  goalTrainerComment?: string; // 트레이너 코멘트
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemberGoalResponse extends MemberGoal {}
+
+// PT 세션 관련 응답
+export interface PTSession {
+  id: string;
+  memberId: string;
+  sessionDate: string;
+  sessionNumber: number; // 회차 번호
+  mainContent?: string; // 주요 수업 내용
+  trainerComment?: string; // 트레이너 코멘트
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PTSessionListResponse {
+  sessions: PTSession[];
+  total: number;
+  totalSessions: number; // 총 세션 수
+  completedSessions: number; // 완료된 세션 수
+}
+
+export interface PTSessionResponse extends PTSession {}
+
+// 운동 기록 관련 응답
+export interface WorkoutRecord {
+  id: string;
+  memberId: string;
+  workoutDate: string;
+  exerciseName: string; // 운동명
+  bodyPart: string; // 부위 (상체, 하체, 전신 등)
+  weight?: number; // 무게 (kg)
+  reps?: number; // 횟수
+  sets?: number; // 세트 수
+  volume?: number; // 볼륨 (weight * reps * sets)
+  duration?: number; // 운동 시간 (분)
+  sessionType: "PT" | "SELF"; // PT 세션 또는 개인 운동
+  ptSessionId?: string; // PT 세션 ID (PT인 경우)
+  trainerComment?: string; // 트레이너 코멘트
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkoutRecordListResponse {
+  records: WorkoutRecord[];
+  total: number;
+}
+
+export interface WorkoutRecordResponse extends WorkoutRecord {}
+
+// 운동 기록 분석 관련 응답
+export interface WorkoutVolumeAnalysis {
+  period: "WEEKLY" | "MONTHLY";
+  startDate: string;
+  endDate: string;
+  bodyPartVolumes: Array<{
+    bodyPart: string;
+    totalVolume: number;
+    totalSets: number;
+    totalReps: number;
+    recordCount: number;
+  }>;
+}
+
+export interface WorkoutVolumeAnalysisResponse {
+  weekly?: WorkoutVolumeAnalysis;
+  monthly?: WorkoutVolumeAnalysis;
+}
+
+// 운동 캘린더 관련 응답
+export interface WorkoutCalendarEvent {
+  date: string;
+  ptSessions: number; // PT 세션 수
+  selfWorkouts: number; // 개인 운동 수
+}
+
+export interface WorkoutCalendarResponse {
+  events: WorkoutCalendarEvent[];
+  startDate: string;
+  endDate: string;
+}
+
+// 추천 운동 루틴 관련 응답
+export interface WorkoutRoutine {
+  id: string;
+  memberId?: string; // null이면 전체 공통 루틴
+  routineName: string; // 루틴명
+  exercises: Array<{
+    exerciseName: string;
+    bodyPart: string;
+    sets?: number;
+    reps?: number;
+    weight?: number;
+    duration?: number;
+    restTime?: number; // 휴식 시간 (초)
+    notes?: string;
+  }>;
+  estimatedDuration: number; // 예상 소요 시간 (분)
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkoutRoutineResponse extends WorkoutRoutine {}
+
+export interface WorkoutRoutineListResponse {
+  routines: WorkoutRoutine[];
+  total: number;
+}
 

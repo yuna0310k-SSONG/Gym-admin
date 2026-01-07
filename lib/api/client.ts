@@ -119,6 +119,20 @@ export const apiClient = {
         throw new Error(errorMessage);
       }
 
+      // 404 에러 처리 (엔드포인트를 찾을 수 없음)
+      if (response.status === 404) {
+        const errorMessage =
+          errorData?.error?.message ||
+          errorData?.message ||
+          "요청한 API 엔드포인트를 찾을 수 없습니다. 백엔드 API가 아직 구현되지 않았을 수 있습니다.";
+        console.error("404 Not Found Error:", {
+          endpoint,
+          status: response.status,
+          errorData,
+        });
+        throw new Error(errorMessage);
+      }
+
       // 500 에러 처리 (서버 내부 오류)
       if (response.status === 500) {
         const errorMessage =
@@ -149,6 +163,21 @@ export const apiClient = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // 404 에러 처리
+      if (response.status === 404) {
+        const errorMessage =
+          errorData?.error?.message ||
+          errorData?.message ||
+          "요청한 API 엔드포인트를 찾을 수 없습니다. 백엔드 API가 아직 구현되지 않았을 수 있습니다.";
+        console.error("404 Not Found Error:", {
+          endpoint,
+          status: response.status,
+          errorData,
+        });
+        throw new Error(errorMessage);
+      }
+      
       throw new Error(
         errorData?.error?.message || `API Error: ${response.statusText}`
       );
