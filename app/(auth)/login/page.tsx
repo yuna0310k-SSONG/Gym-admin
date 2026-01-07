@@ -8,6 +8,9 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { authApi } from "@/lib/api/auth";
 
+// 동적 렌더링 강제
+export const dynamic = 'force-dynamic';
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,7 +21,8 @@ function LoginForm() {
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    if (searchParams?.get("registered") === "true") {
+    const registered = searchParams?.get("registered");
+    if (registered === "true") {
       setSuccessMessage("회원가입이 완료되었습니다. 로그인해주세요.");
     }
   }, [searchParams]);
