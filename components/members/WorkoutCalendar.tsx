@@ -495,10 +495,10 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
                     </div>
                     <div className="text-sm text-[#c9c7c7] space-y-1">
                       <p>부위: {record.bodyPart}</p>
-                      {record.weight > 0 && (
+                      {record.weight != null && record.weight > 0 && (
                         <p>
-                          무게: {record.weight}kg × {record.reps}회 ×{" "}
-                          {record.sets}세트
+                          무게: {record.weight}kg × {record.reps ?? 0}회 ×{" "}
+                          {record.sets ?? 0}세트
                         </p>
                       )}
                     </div>
