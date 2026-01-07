@@ -36,6 +36,7 @@ const ASSESSMENT_CATEGORIES = [
   { value: "STRENGTH", label: "근력", indicators: ["하체 근력"] },
   { value: "CARDIO", label: "심폐", indicators: ["심폐 지구력"] },
   { value: "ENDURANCE", label: "지구력", indicators: ["근지구력"] },
+  { value: "FLEXIBILITY", label: "유연성", indicators: ["유연성"] },
   { value: "BODY", label: "신체", indicators: ["체성분 밸런스"] },
   { value: "STABILITY", label: "안정성", indicators: ["부상 안정성"] },
 ] as const;
