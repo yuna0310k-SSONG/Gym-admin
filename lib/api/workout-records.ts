@@ -14,10 +14,30 @@ import type {
 } from "@/types/api/requests";
 
 export const workoutRecordApi = {
-  async getList(memberId: string): Promise<WorkoutRecordListResponse> {
-    const response = await apiClient.get<ApiResponse<WorkoutRecordListResponse>>(
-      `/api/members/${memberId}/workout-records`
-    );
+  async getList(
+    memberId: string,
+    page: number = 1,
+    pageSize: number = 10,
+    startDate?: string,
+    endDate?: string
+  ): Promise<WorkoutRecordListResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (startDate) {
+      queryParams.append("startDate", startDate);
+    }
+    if (endDate) {
+      queryParams.append("endDate", endDate);
+    }
+    const queryString = queryParams.toString();
+    const endpoint = `/api/members/${memberId}/workout-records${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await apiClient.get<
+      ApiResponse<WorkoutRecordListResponse>
+    >(endpoint);
     if ("data" in response) {
       return response.data;
     }
@@ -93,9 +113,9 @@ export const workoutRecordApi = {
     const endpoint = `/api/members/${memberId}/workout-records/volume-analysis${
       queryString ? `?${queryString}` : ""
     }`;
-    const response = await apiClient.get<ApiResponse<WorkoutVolumeAnalysisResponse>>(
-      endpoint
-    );
+    const response = await apiClient.get<
+      ApiResponse<WorkoutVolumeAnalysisResponse>
+    >(endpoint);
     if ("data" in response) {
       return response.data;
     }
@@ -119,4 +139,3 @@ export const workoutRecordApi = {
     throw new Error("Failed to fetch workout calendar");
   },
 };
-

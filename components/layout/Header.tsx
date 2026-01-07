@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/hooks/useAuth";
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
 
@@ -19,23 +23,46 @@ export default function Header() {
       <div className="px-6">
         <div className="max-w-[1200px] mx-auto">
           <div className="flex justify-between items-center h-16">
-            <Link
-              href="/dashboard/members"
-              className="text-xl font-bold text-[#f9fafb]"
-            >
-              헬스장 회원관리
-            </Link>
+            <div className="flex items-center space-x-4">
+              {/* 메뉴 버튼 (모든 화면 크기) */}
+              <button
+                onClick={onMenuClick}
+                className="text-[#9ca3af] hover:text-[#e5e7eb] p-2 rounded-md hover:bg-[#1a1d24] transition-colors"
+                aria-label="메뉴 열기"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+
+              <Link
+                href="/dashboard/members"
+                className="text-xl font-bold text-[#f9fafb]"
+              >
+                헬스장 회원관리
+              </Link>
+            </div>
 
             <nav className="flex items-center space-x-4">
               <Link
                 href="/dashboard/members"
-                className="text-[#9ca3af] hover:text-[#e5e7eb] px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className="hidden md:block text-[#9ca3af] hover:text-[#e5e7eb] px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 회원 관리
               </Link>
 
               {isAuthenticated && user && (
-                <span className="text-sm text-[#9ca3af]">
+                <span className="hidden sm:block text-sm text-[#9ca3af]">
                   {user.name} ({user.role})
                 </span>
               )}

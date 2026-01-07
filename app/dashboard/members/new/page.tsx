@@ -44,22 +44,47 @@ export default function NewMemberPage() {
       const memberResponse = await memberApi.createMember(memberData);
       const memberId = memberResponse.id;
 
-      // 2. 초기 평가 생성 (있는 경우)
+      // 2. 초기 평가 및 유연성 평가 생성 (있는 경우)
       if (
         initialAssessment &&
         initialAssessment.items &&
         initialAssessment.items.length > 0
       ) {
+        // 일반 초기 평가
         setSubmitProgress("초기 평가 등록 중...");
-        const assessmentData: CreateAssessmentRequest = {
-          assessmentType: "INITIAL",
-          assessedAt: initialAssessment.assessedAt,
-          bodyWeight: initialAssessment.bodyWeight,
-          condition: initialAssessment.condition,
-          trainerComment: initialAssessment.trainerComment,
-          items: initialAssessment.items,
-        };
-        await assessmentApi.createAssessment(memberId, assessmentData);
+        const flexibilityItems = initialAssessment.items.filter(
+          (item) => item.category === "FLEXIBILITY"
+        );
+        const otherItems = initialAssessment.items.filter(
+          (item) => item.category !== "FLEXIBILITY"
+        );
+
+        // 2-1. FLEXIBILITY 항목 외 평가 등록
+        if (otherItems.length > 0) {
+          const assessmentData: CreateAssessmentRequest = {
+            assessmentType: "INITIAL",
+            assessedAt: initialAssessment.assessedAt,
+            bodyWeight: initialAssessment.bodyWeight,
+            condition: initialAssessment.condition,
+            trainerComment: initialAssessment.trainerComment,
+            items: otherItems,
+          };
+          await assessmentApi.createAssessment(memberId, assessmentData);
+        }
+
+        // 2-2. 유연성(FLEXIBILITY) 평가 별도 등록
+        if (flexibilityItems.length > 0) {
+          const flexibilityAssessmentData: CreateAssessmentRequest = {
+            assessmentType: "FLEXIBILITY",
+            assessedAt: initialAssessment.assessedAt,
+            items: flexibilityItems,
+            // 유연성 평가엔 bodyWeight, condition, trainerComment는 선택적으로 필요에 따라 제외하거나 포함
+          };
+          await assessmentApi.createAssessment(
+            memberId,
+            flexibilityAssessmentData
+          );
+        }
       }
 
       // 3. 부상 이력 생성 (있는 경우)

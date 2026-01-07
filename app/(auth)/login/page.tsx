@@ -9,7 +9,7 @@ import Card from "@/components/ui/Card";
 import { authApi } from "@/lib/api/auth";
 
 // 동적 렌더링 강제
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 function LoginForm() {
   const router = useRouter();
@@ -164,21 +164,23 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-6">
-        <div className="w-full max-w-sm text-[#e5e7eb]">
-          <div className="mb-12">
-            <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
-              ADMIN PLATFORM
-            </p>
-            <h2 className="text-3xl font-medium tracking-tight text-[#f9fafb]">
-              로그인
-            </h2>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-6">
+          <div className="w-full max-w-sm text-[#e5e7eb]">
+            <div className="mb-12">
+              <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
+                ADMIN PLATFORM
+              </p>
+              <h2 className="text-3xl font-medium tracking-tight text-[#f9fafb]">
+                로그인
+              </h2>
+            </div>
+            <div className="text-center text-[#9ca3af]">로딩 중...</div>
           </div>
-          <div className="text-center text-[#9ca3af]">로딩 중...</div>
         </div>
-      </div>
-    }>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

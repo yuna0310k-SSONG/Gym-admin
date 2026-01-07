@@ -13,6 +13,7 @@ NEXT_PUBLIC_API_URL=https://gym-membership-backend-5zjj.onrender.com
 ```
 
 **설정 방법**:
+
 1. Vercel 프로젝트 대시보드 접속
 2. Settings → Environment Variables
 3. 위 환경 변수 추가
@@ -21,6 +22,7 @@ NEXT_PUBLIC_API_URL=https://gym-membership-backend-5zjj.onrender.com
 ### 2. 빌드 설정 확인
 
 현재 `package.json`의 빌드 스크립트:
+
 ```json
 {
   "scripts": {
@@ -35,6 +37,7 @@ Vercel은 자동으로 Next.js를 감지하므로 추가 설정 불필요합니�
 ### 3. 프로젝트 루트 확인
 
 프로젝트 루트가 `gym-front` 폴더인 경우:
+
 - Vercel에서 "Root Directory"를 `gym-front`로 설정
 - 또는 프로젝트 루트를 `gym-front`로 설정
 
@@ -114,14 +117,17 @@ vercel --prod
 ## 📝 배포 후 확인 사항
 
 ### 1. 빌드 성공 확인
+
 - Vercel 대시보드에서 빌드 로그 확인
 - 에러가 없으면 성공
 
 ### 2. 환경 변수 확인
+
 - 브라우저 개발자 도구 → Console
 - API 호출이 정상적으로 이루어지는지 확인
 
 ### 3. 기능 테스트
+
 - [ ] 로그인/회원가입
 - [ ] 회원 목록 조회
 - [ ] 회원 상세 페이지
@@ -136,23 +142,27 @@ vercel --prod
 ### 빌드 실패
 
 **문제**: TypeScript 에러
+
 ```bash
 # 로컬에서 빌드 테스트
 npm run build
 ```
 
 **문제**: 환경 변수 누락
+
 - Vercel 대시보드에서 환경 변수 확인
 - `NEXT_PUBLIC_` 접두사 확인
 
 ### 런타임 에러
 
 **문제**: API 호출 실패
+
 - 브라우저 개발자 도구 → Network 탭 확인
 - CORS 에러인지 확인
 - 백엔드 서버 상태 확인
 
 **문제**: 404 에러
+
 - 라우팅 설정 확인
 - `next.config.js` 확인
 
@@ -161,10 +171,12 @@ npm run build
 ## 🔐 보안 주의사항
 
 ### 환경 변수
+
 - ✅ `NEXT_PUBLIC_*` 변수는 클라이언트에 노출됨 (공개 가능한 값만 사용)
 - ❌ 민감한 정보(비밀키, 토큰 등)는 서버 사이드에서만 사용
 
 ### API 토큰
+
 - JWT 토큰은 `localStorage`에 저장 (현재 구현)
 - `httpOnly` 쿠키 사용 고려 (향후 개선)
 
@@ -173,11 +185,13 @@ npm run build
 ## 📊 배포 상태 확인
 
 ### Vercel 대시보드
+
 - **Deployments**: 배포 히스토리
 - **Analytics**: 트래픽 및 성능
 - **Logs**: 실시간 로그 확인
 
 ### 도메인 설정
+
 1. Vercel 대시보드 → Settings → Domains
 2. 커스텀 도메인 추가 (선택사항)
 3. DNS 설정 안내 따르기
@@ -216,4 +230,3 @@ npm run build
 
 **작성일**: 2024-01-06  
 **프로젝트**: 헬스 데이터 플랫폼 프론트엔드
-

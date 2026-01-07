@@ -302,6 +302,8 @@ export interface WorkoutRecord {
 export interface WorkoutRecordListResponse {
   records: WorkoutRecord[];
   total: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface WorkoutRecordResponse extends WorkoutRecord {}
