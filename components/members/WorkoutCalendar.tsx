@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import { workoutRecordApi } from "@/lib/api/workout-records";
 import { useState, useMemo } from "react";
 
@@ -11,6 +12,9 @@ interface WorkoutCalendarProps {
 
 export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showSessionTypeModal, setShowSessionTypeModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const startDate = useMemo(() => {
     const date = new Date(currentMonth);
@@ -34,6 +38,47 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       }),
     enabled: !!memberId,
   });
+
+  const createWorkoutMutation = useMutation({
+    mutationFn: (data: { date: string; sessionType: "PT" | "SELF" }) =>
+      workoutRecordApi.create(memberId, {
+        workoutDate: data.date,
+        exerciseName: "운동 기록",
+        bodyPart: "전신",
+        workoutType: data.sessionType === "SELF" ? "PERSONAL" : "PT",
+        weight: 0,
+        reps: 1,
+        sets: 1,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["workout-calendar", memberId],
+      });
+      setShowSessionTypeModal(false);
+      setSelectedDate(null);
+    },
+  });
+
+  const isDateSelectable = (dateString: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(dateString);
+    targetDate.setHours(0, 0, 0, 0);
+    return targetDate <= today;
+  };
+
+  const handleDateClick = (dateString: string) => {
+    if (!isDateSelectable(dateString)) {
+      return;
+    }
+    setSelectedDate(dateString);
+    setShowSessionTypeModal(true);
+  };
+
+  const handleSessionTypeSelect = (sessionType: "PT" | "SELF") => {
+    if (!selectedDate) return;
+    createWorkoutMutation.mutate({ date: selectedDate, sessionType });
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -169,13 +214,19 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
             const isToday =
               day.dateString === new Date().toISOString().split("T")[0];
 
+            const isSelectable = isDateSelectable(day.dateString);
+            const isPastDate = day.dateString < new Date().toISOString().split("T")[0];
+
             return (
               <div
                 key={index}
+                onClick={() => isSelectable && handleDateClick(day.dateString)}
                 className={`h-10 p-1 border rounded flex flex-col transition-colors ${
                   isToday
                     ? "border-blue-500 bg-blue-500/10"
-                    : "border-[#374151] hover:bg-[#1a1d24]"
+                    : isSelectable
+                    ? "border-[#374151] hover:bg-[#1a1d24] cursor-pointer"
+                    : "border-[#374151] opacity-50 cursor-not-allowed"
                 }`}
               >
                 <div
@@ -186,7 +237,9 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
                       ? "text-red-400"
                       : dayOfWeek === 6
                       ? "text-blue-400"
-                      : "text-[#c9c7c7]"
+                      : isSelectable
+                      ? "text-[#c9c7c7]"
+                      : "text-[#6b7280]"
                   }`}
                 >
                   {day.date}
@@ -204,6 +257,63 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
           })}
         </div>
       </div>
+
+      {/* 세션 타입 선택 모달 */}
+      {showSessionTypeModal && selectedDate && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-sm w-full mx-4 border border-[#374151]">
+            <h3 className="text-lg font-semibold text-white mb-4">
+              운동 유형 선택
+            </h3>
+            <p className="text-sm text-[#c9c7c7] mb-4">
+              {new Date(selectedDate).toLocaleDateString("ko-KR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            <div className="space-y-3">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handleSessionTypeSelect("PT")}
+                disabled={createWorkoutMutation.isPending}
+              >
+                PT 세션
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleSessionTypeSelect("SELF")}
+                disabled={createWorkoutMutation.isPending}
+              >
+                개인 운동
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setShowSessionTypeModal(false);
+                  setSelectedDate(null);
+                }}
+                disabled={createWorkoutMutation.isPending}
+              >
+                취소
+              </Button>
+            </div>
+            {createWorkoutMutation.isPending && (
+              <p className="text-sm text-[#c9c7c7] mt-4 text-center">
+                저장 중...
+              </p>
+            )}
+            {createWorkoutMutation.isError && (
+              <p className="text-sm text-red-400 mt-4 text-center">
+                저장에 실패했습니다. 다시 시도해주세요.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
