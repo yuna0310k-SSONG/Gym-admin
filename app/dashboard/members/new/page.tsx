@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NewMemberForm from "@/components/members/NewMemberForm";
+import AlertModal from "@/components/ui/AlertModal";
 import { memberApi } from "@/lib/api/members";
 import { assessmentApi } from "@/lib/api/assessments";
 import { injuryApi } from "@/lib/api/injuries";
@@ -41,6 +42,16 @@ export default function NewMemberPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitProgress, setSubmitProgress] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    type?: "info" | "success" | "error" | "warning";
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    message: "",
+  });
 
   const handleSubmit = async (data: NewMemberFormData) => {
     try {
@@ -94,78 +105,122 @@ export default function NewMemberPage() {
         initialAssessment.items.length > 0
       ) {
         setSubmitProgress("평가 항목 등록 중...");
-        const flexibilityItems = initialAssessment.items.filter(
-          (item) => item.category === "FLEXIBILITY"
-        );
-        const otherItems = initialAssessment.items.filter(
-          (item) => item.category !== "FLEXIBILITY"
-        );
 
-        // 2-1. FLEXIBILITY 항목 외 평가 등록 (INITIAL 타입)
-        if (otherItems.length > 0) {
-          try {
-            const assessmentData: CreateAssessmentRequest = {
-              assessmentType: "INITIAL",
-              assessedAt: initialAssessment.assessedAt,
-              bodyWeight: initialAssessment.bodyWeight,
-              // condition이 빈 문자열이거나 유효하지 않으면 undefined로 설정
-              condition:
-                initialAssessment.condition &&
-                initialAssessment.condition.trim() !== ""
-                  ? (initialAssessment.condition as
-                      | "EXCELLENT"
-                      | "GOOD"
-                      | "NORMAL"
-                      | "POOR")
-                  : undefined,
-              trainerComment: initialAssessment.trainerComment,
-              items: otherItems,
-            };
-            await assessmentApi.createAssessment(memberId, assessmentData);
-            setSubmitProgress(
-              `평가 항목 등록 완료 (${otherItems.length}개 항목)`
+        // bodyWeight는 NaN일 수 있으므로 안전하게 처리 (DB에서는 nullable)
+        const safeBodyWeight =
+          typeof initialAssessment.bodyWeight === "number" &&
+          !Number.isNaN(initialAssessment.bodyWeight)
+            ? initialAssessment.bodyWeight
+            : undefined;
+
+        const safeCondition =
+          initialAssessment.condition &&
+          initialAssessment.condition.trim() !== ""
+            ? (initialAssessment.condition as
+                | "EXCELLENT"
+                | "GOOD"
+                | "NORMAL"
+                | "POOR")
+            : undefined;
+
+        // 모든 평가 항목(유연성 포함)을 INITIAL 평가로 함께 등록
+        // 백엔드가 FLEXIBILITY enum을 지원하지 않을 경우를 대비해
+        // 에러 처리 추가
+        try {
+          const assessmentData: CreateAssessmentRequest = {
+            assessmentType: "INITIAL",
+            assessedAt: initialAssessment.assessedAt,
+            bodyWeight: safeBodyWeight,
+            condition: safeCondition,
+            trainerComment: initialAssessment.trainerComment,
+            items: initialAssessment.items, // 모든 항목 포함 (유연성 포함)
+          };
+
+          await assessmentApi.createAssessment(memberId, assessmentData);
+          setSubmitProgress(
+            `평가 항목 등록 완료 (${initialAssessment.items.length}개 항목)`
+          );
+          setAlertModal({
+            isOpen: true,
+            title: "평가 항목 등록 완료",
+            message: "평가 항목이 성공적으로 등록되었습니다.",
+            type: "success",
+          });
+        } catch (error: any) {
+          // FLEXIBILITY enum 에러인 경우, 유연성 항목을 제외하고 재시도
+          const errorMessage = error?.message || "";
+          const isFlexibilityEnumError =
+            errorMessage.includes(
+              "invalid input value for enum category_type"
+            ) ||
+            (errorMessage.includes("FLEXIBILITY") &&
+              errorMessage.includes("enum"));
+
+          if (isFlexibilityEnumError) {
+            console.warn(
+              "[New Member] FLEXIBILITY enum 에러 감지. 유연성 항목을 제외하고 재시도합니다."
             );
-          } catch (error) {
+
+            // 유연성 항목 제외
+            const itemsWithoutFlexibility = initialAssessment.items.filter(
+              (item) => item.category !== "FLEXIBILITY"
+            );
+
+            if (itemsWithoutFlexibility.length > 0) {
+              try {
+                const assessmentDataWithoutFlexibility: CreateAssessmentRequest =
+                  {
+                    assessmentType: "INITIAL",
+                    assessedAt: initialAssessment.assessedAt,
+                    bodyWeight: safeBodyWeight,
+                    condition: safeCondition,
+                    trainerComment: initialAssessment.trainerComment,
+                    items: itemsWithoutFlexibility,
+                  };
+
+                await assessmentApi.createAssessment(
+                  memberId,
+                  assessmentDataWithoutFlexibility
+                );
+                setSubmitProgress(
+                  `평가 항목 등록 완료 (${itemsWithoutFlexibility.length}개 항목, 유연성 제외)`
+                );
+                setAlertModal({
+                  isOpen: true,
+                  title: "평가 항목 등록 완료",
+                  message:
+                    "평가 항목이 성공적으로 등록되었습니다.\n(유연성 항목은 백엔드 enum 미지원으로 제외됨)",
+                  type: "success",
+                });
+
+                // 개발 환경에서만 경고 표시
+                if (process.env.NODE_ENV === "development") {
+                  console.warn(
+                    "[New Member] 백엔드가 FLEXIBILITY 카테고리를 지원하지 않습니다. " +
+                      "백엔드 데이터베이스의 category_type enum에 FLEXIBILITY를 추가해야 합니다."
+                  );
+                }
+              } catch (retryError) {
+                console.error("평가 항목 등록 재시도 실패:", retryError);
+                throw new Error(
+                  `평가 항목 등록에 실패했습니다: ${
+                    retryError instanceof Error
+                      ? retryError.message
+                      : "알 수 없는 오류"
+                  }`
+                );
+              }
+            } else {
+              // 모든 항목이 유연성인 경우
+              throw new Error(
+                "유연성 평가 항목만 있는 경우, 백엔드에서 지원하지 않아 등록할 수 없습니다."
+              );
+            }
+          } else {
+            // 다른 에러인 경우
             console.error("평가 항목 등록 실패:", error);
             throw new Error(
               `평가 항목 등록에 실패했습니다: ${
-                error instanceof Error ? error.message : "알 수 없는 오류"
-              }`
-            );
-          }
-        }
-
-        // 2-2. 유연성(FLEXIBILITY) 평가 별도 등록 (FLEXIBILITY 타입)
-        if (flexibilityItems.length > 0) {
-          try {
-            const flexibilityAssessmentData: CreateAssessmentRequest = {
-              assessmentType: "FLEXIBILITY",
-              assessedAt: initialAssessment.assessedAt,
-              bodyWeight: initialAssessment.bodyWeight,
-              // condition이 빈 문자열이거나 유효하지 않으면 undefined로 설정
-              condition:
-                initialAssessment.condition &&
-                initialAssessment.condition.trim() !== ""
-                  ? (initialAssessment.condition as
-                      | "EXCELLENT"
-                      | "GOOD"
-                      | "NORMAL"
-                      | "POOR")
-                  : undefined,
-              trainerComment: initialAssessment.trainerComment,
-              items: flexibilityItems,
-            };
-            await assessmentApi.createAssessment(
-              memberId,
-              flexibilityAssessmentData
-            );
-            setSubmitProgress(
-              `유연성 평가 등록 완료 (${flexibilityItems.length}개 항목)`
-            );
-          } catch (error) {
-            console.error("유연성 평가 등록 실패:", error);
-            throw new Error(
-              `유연성 평가 등록에 실패했습니다: ${
                 error instanceof Error ? error.message : "알 수 없는 오류"
               }`
             );
@@ -196,9 +251,17 @@ export default function NewMemberPage() {
         }
       }
 
-      // 성공 시 회원 상세 페이지로 이동
+      // 성공 시 알림 표시 후 회원 목록으로 이동
       setSubmitProgress("완료!");
-      router.push(`/dashboard/members/${memberId}`);
+      setAlertModal({
+        isOpen: true,
+        title: "회원 등록 완료",
+        message: "회원이 성공적으로 등록되었습니다.",
+        type: "success",
+        onConfirm: () => {
+          router.push("/dashboard/members");
+        },
+      });
     } catch (error) {
       console.error("회원 등록 실패:", error);
       const errorMsg =
@@ -263,6 +326,13 @@ export default function NewMemberPage() {
       }
 
       setErrorMessage(userMessage);
+      // 에러 메시지를 모달로 표시
+      setAlertModal({
+        isOpen: true,
+        title: "회원 등록 실패",
+        message: userMessage,
+        type: "error",
+      });
     } finally {
       setIsSubmitting(false);
       setSubmitProgress("");
@@ -338,6 +408,20 @@ export default function NewMemberPage() {
           </div>
         )}
       </div>
+
+      {/* Alert 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => {
+          setAlertModal({ isOpen: false, message: "" });
+          if (alertModal.onConfirm) {
+            alertModal.onConfirm();
+          }
+        }}
+      />
     </div>
   );
 }

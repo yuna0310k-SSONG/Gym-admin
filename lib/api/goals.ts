@@ -19,13 +19,18 @@ export const goalApi = {
       }
       throw new Error("Failed to fetch member goal");
     } catch (error: any) {
-      // 404 에러는 목표가 없는 것으로 처리
+      // 404 에러는 목표가 없는 것으로 처리 (조용히 처리)
+      const errorMessage = error?.message || "";
       if (
-        error?.message?.includes("404") ||
-        error?.message?.includes("Cannot GET")
+        errorMessage.includes("404") ||
+        errorMessage.includes("Cannot GET") ||
+        errorMessage.includes("찾을 수 없습니다") ||
+        errorMessage.includes("Not Found")
       ) {
+        // 목표가 없는 것은 정상적인 상태이므로 null 반환
         return null;
       }
+      // 다른 에러는 그대로 throw
       throw error;
     }
   },

@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { ptSessionApi } from "@/lib/api/pt-sessions";
 import { ptCountApi, type CreatePTUsageRequest } from "@/lib/api/pt-count";
+import { workoutRecordApi } from "@/lib/api/workout-records";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { CreatePTSessionRequest, UpdatePTSessionRequest } from "@/types/api/requests";
@@ -130,7 +131,7 @@ export default function MemberPTSessionProgress({
   const createMutation = useMutation({
     mutationFn: (data: CreatePTSessionRequest) =>
       ptSessionApi.create(memberId, data),
-    onSuccess: async () => {
+    onSuccess: async (_session, variables) => {
       // 세션 목록을 먼저 새로고침하여 최신 세션 수를 가져옴
       await queryClient.invalidateQueries({ queryKey: ["pt-sessions", memberId] });
       
@@ -155,7 +156,39 @@ export default function MemberPTSessionProgress({
           console.error("PT 횟수 업데이트 실패:", error);
         }
       }
-      
+
+      // PT 세션이 생성된 날짜를 운동 캘린더에도 표시하기 위해
+      // 해당 날짜에 PT 타입의 운동 기록을 자동으로 생성
+      try {
+        if (variables?.sessionDate) {
+          // 날짜 형식 확인 및 변환 (YYYY-MM-DD 형식으로 보장)
+          const sessionDate = variables.sessionDate.split("T")[0];
+          
+          await workoutRecordApi.create(memberId, {
+            workoutDate: sessionDate,
+            workoutType: "PT",
+            exerciseName: variables.mainContent || "PT 수업",
+            bodyPart: "전신",
+            weight: 0,
+            reps: 1,
+            sets: 1,
+          });
+          
+          // 운동 캘린더 관련 쿼리 무효화 및 강제 새로고침
+          queryClient.invalidateQueries({
+            queryKey: ["workout-calendar", memberId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["workout-records", memberId],
+          });
+          
+          console.log("[PT Session] 운동 캘린더에 PT 기록 추가 완료:", sessionDate);
+        }
+      } catch (error: any) {
+        console.error("[PT Session] 캘린더에 PT 기록 추가 실패:", error);
+        // 에러가 발생해도 세션 생성은 성공했으므로 계속 진행
+      }
+
       setShowCreateModal(false);
       reset();
     },
@@ -164,8 +197,15 @@ export default function MemberPTSessionProgress({
   const updateMutation = useMutation({
     mutationFn: ({ sessionId, data }: { sessionId: string; data: UpdatePTSessionRequest }) =>
       ptSessionApi.update(memberId, sessionId, data),
-    onSuccess: () => {
+    onSuccess: (_session, variables) => {
       queryClient.invalidateQueries({ queryKey: ["pt-sessions", memberId] });
+      // 세션 날짜가 변경될 수 있으므로 캘린더도 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["workout-calendar", memberId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["workout-records", memberId],
+      });
       setEditingSession(null);
       reset();
     },
@@ -198,6 +238,14 @@ export default function MemberPTSessionProgress({
           console.error("PT 횟수 업데이트 실패:", error);
         }
       }
+      
+      // 세션 삭제 시 캘린더도 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["workout-calendar", memberId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["workout-records", memberId],
+      });
       
       setEditingSession(null);
       setShowDeleteConfirm(false);

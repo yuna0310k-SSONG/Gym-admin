@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import AlertModal from "@/components/ui/AlertModal";
 import MemberTable from "@/components/members/MemberTable";
 import Input from "@/components/ui/Input";
 import type { Member } from "@/types/api/responses";
@@ -14,6 +15,15 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    type?: "info" | "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    message: "",
+  });
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -23,11 +33,15 @@ export default function MembersPage() {
         setMembers(data.members);
       } catch (error) {
         console.error("회원 목록 조회 실패:", error);
-        alert(
-          error instanceof Error
-            ? error.message
-            : "회원 목록을 불러오지 못했습니다."
-        );
+        setAlertModal({
+          isOpen: true,
+          title: "회원 목록 조회 실패",
+          message:
+            error instanceof Error
+              ? error.message
+              : "회원 목록을 불러오지 못했습니다.",
+          type: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -83,7 +97,15 @@ export default function MembersPage() {
           <MemberTable members={filteredMembers} />
         )}
       </Card>
+
+      {/* Alert 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal({ isOpen: false, message: "" })}
+      />
     </div>
   );
 }
-

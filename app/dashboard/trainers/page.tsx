@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import AlertModal from "@/components/ui/AlertModal";
 import { trainerApi } from "@/lib/api/trainers";
 import type { TrainerApprovalRequest } from "@/lib/api/trainers";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -18,6 +19,26 @@ export default function TrainersPage() {
   const [rejectedTrainers, setRejectedTrainers] =
     useState<TrainerApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    type?: "info" | "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    message: "",
+  });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     // Admin만 접근 가능
@@ -72,71 +93,114 @@ export default function TrainersPage() {
       setPendingTrainers([]);
       setApprovedTrainers([]);
       setRejectedTrainers([]);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "트레이너 목록을 불러오지 못했습니다."
-      );
+      setAlertModal({
+        isOpen: true,
+        title: "트레이너 목록 조회 실패",
+        message:
+          error instanceof Error
+            ? error.message
+            : "트레이너 목록을 불러오지 못했습니다.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async (trainerId: string) => {
-    if (!confirm("이 트레이너를 승인하시겠습니까?")) {
-      return;
-    }
-
-    try {
-      await trainerApi.approveTrainer(trainerId);
-      alert("트레이너가 승인되었습니다.");
-      fetchTrainers(); // 목록 새로고침
-    } catch (error) {
-      console.error("트레이너 승인 실패:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "트레이너 승인에 실패했습니다."
-      );
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "트레이너 승인 확인",
+      message: "이 트레이너를 승인하시겠습니까?",
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+        try {
+          await trainerApi.approveTrainer(trainerId);
+          setAlertModal({
+            isOpen: true,
+            title: "승인 완료",
+            message: "트레이너가 승인되었습니다.",
+            type: "success",
+          });
+          fetchTrainers(); // 목록 새로고침
+        } catch (error) {
+          console.error("트레이너 승인 실패:", error);
+          setAlertModal({
+            isOpen: true,
+            title: "트레이너 승인 실패",
+            message:
+              error instanceof Error
+                ? error.message
+                : "트레이너 승인에 실패했습니다.",
+            type: "error",
+          });
+        }
+      },
+    });
   };
 
   const handleReject = async (trainerId: string) => {
-    if (!confirm("이 트레이너를 거부하시겠습니까?")) {
-      return;
-    }
-
-    try {
-      await trainerApi.rejectTrainer(trainerId);
-      alert("트레이너가 거부되었습니다.");
-      fetchTrainers(); // 목록 새로고침
-    } catch (error) {
-      console.error("트레이너 거부 실패:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "트레이너 거부에 실패했습니다."
-      );
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "트레이너 거부 확인",
+      message: "이 트레이너를 거부하시겠습니까?",
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+        try {
+          await trainerApi.rejectTrainer(trainerId);
+          setAlertModal({
+            isOpen: true,
+            title: "거부 완료",
+            message: "트레이너가 거부되었습니다.",
+            type: "success",
+          });
+          fetchTrainers(); // 목록 새로고침
+        } catch (error) {
+          console.error("트레이너 거부 실패:", error);
+          setAlertModal({
+            isOpen: true,
+            title: "트레이너 거부 실패",
+            message:
+              error instanceof Error
+                ? error.message
+                : "트레이너 거부에 실패했습니다.",
+            type: "error",
+          });
+        }
+      },
+    });
   };
 
   const handleDisapprove = async (trainerId: string) => {
-    if (!confirm("이 트레이너의 승인을 취소하시겠습니까?")) {
-      return;
-    }
-
-    try {
-      await trainerApi.disapproveTrainer(trainerId);
-      alert("트레이너 승인이 취소되었습니다.");
-      fetchTrainers(); // 목록 새로고침
-    } catch (error) {
-      console.error("트레이너 승인 취소 실패:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "트레이너 승인 취소에 실패했습니다."
-      );
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "승인 취소 확인",
+      message: "이 트레이너의 승인을 취소하시겠습니까?",
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+        try {
+          await trainerApi.disapproveTrainer(trainerId);
+          setAlertModal({
+            isOpen: true,
+            title: "승인 취소 완료",
+            message: "트레이너 승인이 취소되었습니다.",
+            type: "success",
+          });
+          fetchTrainers(); // 목록 새로고침
+        } catch (error) {
+          console.error("트레이너 승인 취소 실패:", error);
+          setAlertModal({
+            isOpen: true,
+            title: "승인 취소 실패",
+            message:
+              error instanceof Error
+                ? error.message
+                : "트레이너 승인 취소에 실패했습니다.",
+            type: "error",
+          });
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -316,6 +380,46 @@ export default function TrainersPage() {
           </div>
         )}
       </Card>
+
+      {/* Alert 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal({ isOpen: false, message: "" })}
+      />
+
+      {/* Confirm 모달 */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
+            <h3 className="text-lg font-semibold text-white mb-3">
+              {confirmModal.title}
+            </h3>
+            <p className="text-[#c9c7c7] text-sm mb-6">{confirmModal.message}</p>
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setConfirmModal({
+                    isOpen: false,
+                    title: "",
+                    message: "",
+                    onConfirm: () => {},
+                  })
+                }
+              >
+                취소
+              </Button>
+              <Button variant="primary" size="sm" onClick={confirmModal.onConfirm}>
+                확인
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

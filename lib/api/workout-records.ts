@@ -149,18 +149,27 @@ export const workoutRecordApi = {
     } catch (error: any) {
       // UUID 파싱 에러 또는 라우팅 문제 감지
       const errorMessage = error?.message || "";
+      const errorData = error?.errorData || {};
+      const statusCode = error?.status || errorData?.status;
+
+      // 500 에러 또는 UUID 파싱 에러 감지
       const isRoutingError =
+        statusCode === 500 ||
         errorMessage.includes("invalid input syntax for type uuid") ||
         errorMessage.includes("calendar") ||
-        error?.message?.includes("404") ||
-        error?.message?.includes("500") ||
-        error?.message?.includes("Cannot GET");
+        errorMessage.includes("500") ||
+        errorMessage.includes("Internal Server Error") ||
+        errorMessage.includes("404") ||
+        errorMessage.includes("Cannot GET");
 
       if (isRoutingError) {
-        console.warn(
-          "[Workout Calendar API] Calendar endpoint routing error. 운동 기록 목록 API로 대체합니다:",
-          errorMessage
-        );
+        // 개발 환경에서만 경고 표시
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Workout Calendar API] Calendar endpoint error (500/routing). 운동 기록 목록 API로 대체합니다:",
+            errorMessage
+          );
+        }
 
         // 백엔드 라우팅 문제가 있을 때 대체 방법: 운동 기록 목록에서 캘린더 데이터 생성
         try {

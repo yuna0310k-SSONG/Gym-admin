@@ -54,13 +54,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             <nav className="flex items-center space-x-4">
-              <Link
-                href="/dashboard/members"
-                className="hidden md:block text-[#9ca3af] hover:text-[#e5e7eb] px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                회원 관리
-              </Link>
-
               {isAuthenticated && user && (
                 <span className="hidden sm:block text-sm text-[#9ca3af]">
                   {user.name} ({user.role})

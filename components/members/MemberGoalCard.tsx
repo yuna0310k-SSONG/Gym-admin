@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
+import AlertModal from "@/components/ui/AlertModal";
 import { goalApi } from "@/lib/api/goals";
 import { useState } from "react";
 
@@ -15,11 +16,22 @@ export default function MemberGoalCard({ memberId }: MemberGoalCardProps) {
   const [goal, setGoal] = useState("");
   const [progress, setProgress] = useState(0);
   const [comment, setComment] = useState("");
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    type?: "info" | "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    message: "",
+  });
 
   const { data: goalData, isLoading } = useQuery({
     queryKey: ["goal", memberId],
     queryFn: () => goalApi.get(memberId),
     enabled: !!memberId,
+    retry: false,
+    throwOnError: false,
   });
 
   const createMutation = useMutation({
@@ -40,7 +52,12 @@ export default function MemberGoalCard({ memberId }: MemberGoalCardProps) {
         error.message.includes("찾을 수 없습니다")
           ? "목표 관리 API가 아직 구현되지 않았습니다. 백엔드 개발자에게 문의해주세요."
           : `목표 저장에 실패했습니다: ${error.message}`;
-      alert(errorMessage);
+      setAlertModal({
+        isOpen: true,
+        title: "목표 생성 실패",
+        message: errorMessage,
+        type: "error",
+      });
     },
   });
 
@@ -62,7 +79,12 @@ export default function MemberGoalCard({ memberId }: MemberGoalCardProps) {
         error.message.includes("찾을 수 없습니다")
           ? "목표 관리 API가 아직 구현되지 않았습니다. 백엔드 개발자에게 문의해주세요."
           : `목표 저장에 실패했습니다: ${error.message}`;
-      alert(errorMessage);
+      setAlertModal({
+        isOpen: true,
+        title: "목표 생성 실패",
+        message: errorMessage,
+        type: "error",
+      });
     },
   });
 
@@ -78,7 +100,12 @@ export default function MemberGoalCard({ memberId }: MemberGoalCardProps) {
   const handleSave = () => {
     // 목표 필수 검증
     if (!goal.trim()) {
-      alert("목표를 입력해주세요.");
+      setAlertModal({
+        isOpen: true,
+        title: "입력 오류",
+        message: "목표를 입력해주세요.",
+        type: "warning",
+      });
       return;
     }
 
@@ -232,6 +259,15 @@ export default function MemberGoalCard({ memberId }: MemberGoalCardProps) {
           수정
         </Button>
       </div>
+
+      {/* Alert 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal({ isOpen: false, message: "" })}
+      />
     </div>
   );
 }

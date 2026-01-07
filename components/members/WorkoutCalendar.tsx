@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { workoutRecordApi } from "@/lib/api/workout-records";
+import type { WorkoutCalendarResponse } from "@/types/api/responses";
 import { useState, useMemo } from "react";
 
 interface WorkoutCalendarProps {
@@ -48,8 +49,8 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
   });
 
   const createWorkoutMutation = useMutation({
-    mutationFn: (data: { 
-      date: string; 
+    mutationFn: (data: {
+      date: string;
       workoutType: "PT" | "PERSONAL";
       exerciseName: string;
       bodyPart: string;
@@ -63,15 +64,44 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         reps: 1,
         sets: 1,
       }),
-    onSuccess: () => {
-      // 캘린더 데이터를 즉시 새로고침하여 표시 업데이트
-      queryClient.invalidateQueries({
-        queryKey: ["workout-calendar", memberId],
-      });
-      // 현재 월의 캘린더 쿼리도 강제로 다시 가져오기
-      queryClient.refetchQueries({
-        queryKey: ["workout-calendar", memberId, startDate, endDate],
-      });
+    onSuccess: (_record, variables) => {
+      // 클라이언트에서 캘린더 데이터 즉시 반영 (낙관적 업데이트)
+      queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
+        ["workout-calendar", memberId, startDate, endDate],
+        (old) => {
+          if (!old) return old;
+
+          const date = variables.date;
+          const isPT = variables.workoutType === "PT";
+
+          const existingIndex = old.events.findIndex(
+            (event) => event.date === date
+          );
+
+          let newEvents = [...old.events];
+
+          if (existingIndex >= 0) {
+            const existing = newEvents[existingIndex];
+            newEvents[existingIndex] = {
+              ...existing,
+              ptSessions: existing.ptSessions + (isPT ? 1 : 0),
+              selfWorkouts: existing.selfWorkouts + (isPT ? 0 : 1),
+            };
+          } else {
+            newEvents.push({
+              date,
+              ptSessions: isPT ? 1 : 0,
+              selfWorkouts: isPT ? 0 : 1,
+            });
+          }
+
+          return {
+            ...old,
+            events: newEvents,
+          };
+        }
+      );
+
       setShowSessionTypeModal(false);
       setShowRecordModal(false);
       setSelectedDate(null);

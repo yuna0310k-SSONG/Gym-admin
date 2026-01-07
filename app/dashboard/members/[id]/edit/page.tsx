@@ -6,6 +6,7 @@ import Link from "next/link";
 import MemberForm from "@/components/members/MemberForm";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import AlertModal from "@/components/ui/AlertModal";
 import { memberApi } from "@/lib/api/members";
 import type { Member } from "@/types/api/responses";
 import type { CreateMemberRequest } from "@/types/api/requests";
@@ -17,6 +18,15 @@ export default function EditMemberPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    type?: "info" | "success" | "error" | "warning";
+  }>({
+    isOpen: false,
+    message: "",
+  });
 
   const memberId = params.id as string;
 
@@ -55,11 +65,15 @@ export default function EditMemberPage() {
       router.push(`/dashboard/members/${memberId}`);
     } catch (err) {
       console.error("회원 수정 실패:", err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "회원 정보 수정에 실패했습니다. 다시 시도해주세요."
-      );
+      setAlertModal({
+        isOpen: true,
+        title: "회원 정보 수정 실패",
+        message:
+          err instanceof Error
+            ? err.message
+            : "회원 정보 수정에 실패했습니다. 다시 시도해주세요.",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -113,6 +127,15 @@ export default function EditMemberPage() {
           </div>
         )}
       </div>
+
+      {/* Alert 모달 */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal({ isOpen: false, message: "" })}
+      />
     </div>
   );
 }

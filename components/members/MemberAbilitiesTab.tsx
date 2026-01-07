@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 import AbilityHexagon from "@/components/health/AbilityHexagon";
 import { useQuery } from "@tanstack/react-query";
 import { abilityApi } from "@/lib/api/abilities";
@@ -17,6 +18,7 @@ export default function MemberAbilitiesTab({
   const [selectedPeriod, setSelectedPeriod] = useState<
     "current" | "week" | "month"
   >("current");
+  const [showPeriodicModal, setShowPeriodicModal] = useState(false);
 
   const {
     data: hexagonData,
@@ -92,42 +94,77 @@ export default function MemberAbilitiesTab({
 
   return (
     <div className="space-y-6">
-      {/* 능력치 헥사곤 */}
+      {/* 능력치 헥사곤 + 정기 평가 추가 버튼 */}
       {displayData && (
         <div>
-          <div className="mb-4 flex space-x-2">
-            <button
-              onClick={() => setSelectedPeriod("current")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                selectedPeriod === "current"
-                  ? "bg-blue-500 text-white"
-                  : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
-              }`}
+          <div className="mb-4 flex justify-between items-center">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSelectedPeriod("current")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectedPeriod === "current"
+                    ? "bg-blue-500 text-white"
+                    : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
+                }`}
+              >
+                현재
+              </button>
+              <button
+                onClick={() => setSelectedPeriod("week")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectedPeriod === "week"
+                    ? "bg-blue-500 text-white"
+                    : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
+                }`}
+              >
+                주간
+              </button>
+              <button
+                onClick={() => setSelectedPeriod("month")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectedPeriod === "month"
+                    ? "bg-blue-500 text-white"
+                    : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
+                }`}
+              >
+                월간
+              </button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPeriodicModal(true)}
             >
-              현재
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("week")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                selectedPeriod === "week"
-                  ? "bg-blue-500 text-white"
-                  : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
-              }`}
-            >
-              주간
-            </button>
-            <button
-              onClick={() => setSelectedPeriod("month")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                selectedPeriod === "month"
-                  ? "bg-blue-500 text-white"
-                  : "bg-[#1a1d24] text-[#c9c7c7] hover:bg-[#252830]"
-              }`}
-            >
-              월간
-            </button>
+              정기 평가 추가
+            </Button>
           </div>
           <AbilityHexagon data={displayData} title="능력치 헥사곤" />
+        </div>
+      )}
+
+      {/* 정기 평가 안내 모달 */}
+      {showPeriodicModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
+            <h3 className="text-lg font-semibold text-white mb-3">
+              정기 평가 입력 준비 중
+            </h3>
+            <p className="text-sm text-[#c9c7c7] mb-4 leading-relaxed">
+              정기 평가(주간/월간) 입력 화면은 아직 준비 중입니다.
+              <br />
+              평가 항목과 폼 구조가 확정되면 이 버튼에서 바로 정기 평가를 추가할
+              수 있도록 연동할 예정입니다.
+            </p>
+            <div className="flex justify-end space-x-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPeriodicModal(false)}
+              >
+                닫기
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
