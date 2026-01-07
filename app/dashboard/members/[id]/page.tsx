@@ -23,6 +23,9 @@ export default function MemberDetailPage() {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("abilities");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchMember = async () => {
@@ -51,6 +54,38 @@ export default function MemberDetailPage() {
 
     fetchMember();
   }, [params.id]);
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleFirstConfirm = () => {
+    setShowDeleteConfirm(false);
+    setShowFinalConfirm(true);
+  };
+
+  const handleFinalConfirm = async () => {
+    if (!member) return;
+
+    try {
+      setIsDeleting(true);
+      await memberApi.deleteMember(member.id);
+      // 삭제 성공 시 회원 목록으로 이동
+      router.push("/dashboard/members");
+    } catch (error) {
+      console.error("회원 삭제 실패:", error);
+      alert(
+        error instanceof Error ? error.message : "회원 삭제에 실패했습니다."
+      );
+      setIsDeleting(false);
+      setShowFinalConfirm(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setShowFinalConfirm(false);
+  };
 
   if (loading) {
     return (
@@ -113,7 +148,13 @@ export default function MemberDetailPage() {
           <Link href={`/dashboard/members/${member.id}/edit`}>
             <Button variant="primary">수정</Button>
           </Link>
-          <Button variant="danger">삭제</Button>
+          <Button
+            variant="danger"
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "삭제 중..." : "탈퇴"}
+          </Button>
         </div>
       </div>
 
@@ -141,6 +182,80 @@ export default function MemberDetailPage() {
           <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
         </Card>
       </section>
+
+      {/* 첫 번째 확인 다이얼로그 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
+            <h3 className="text-lg font-semibold text-white mb-4">
+              회원 탈퇴 확인
+            </h3>
+            <p className="text-[#c9c7c7] mb-6">
+              정말 탈퇴하시겠습니까?
+              <br />
+              <span className="text-red-400 text-sm mt-2 block">
+                이 작업은 되돌릴 수 없습니다.
+              </span>
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="danger"
+                className="flex-1"
+                onClick={handleFirstConfirm}
+              >
+                탈퇴하기
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleCancelDelete}
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 두 번째 최종 확인 다이얼로그 */}
+      {showFinalConfirm && member && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
+            <h3 className="text-lg font-semibold text-white mb-4">최종 확인</h3>
+            <p className="text-[#c9c7c7] mb-6">
+              <span className="text-white font-semibold">{member.name}</span>
+              님 탈퇴하시는게 맞나요?
+              <br />
+              <span className="text-red-400 text-sm mt-2 block">
+                회원 정보와 모든 데이터가 영구적으로 삭제됩니다.
+              </span>
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="danger"
+                className="flex-1"
+                onClick={handleFinalConfirm}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "삭제 중..." : "네, 탈퇴합니다"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+              >
+                취소
+              </Button>
+            </div>
+            {isDeleting && (
+              <p className="text-sm text-[#c9c7c7] mt-4 text-center">
+                회원 정보를 삭제하는 중입니다...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
