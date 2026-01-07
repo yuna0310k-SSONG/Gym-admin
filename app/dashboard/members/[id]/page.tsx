@@ -171,7 +171,7 @@ export default function MemberDetailPage() {
         </div>
       </section>
 
-      {/* PT 진행률 */}
+      {/* PT 세션 및 횟수 관리 */}
       <section>
         <MemberPTSessionProgress memberId={member.id} />
       </section>

@@ -46,7 +46,7 @@ export default function InsightsPage() {
         setLoadingStats(true);
         const data = await memberApi.getMembers(1, 1000);
         const members = data.members || [];
-        
+
         setMemberStats({
           total: members.length,
           active: members.filter((m) => m.status === "ACTIVE").length,
@@ -125,7 +125,9 @@ export default function InsightsPage() {
             {loadingStats ? (
               <p className="text-[#9ca3af] text-sm">로딩 중...</p>
             ) : (
-              <p className="text-3xl font-bold text-white">{memberStats.total}</p>
+              <p className="text-3xl font-bold text-white">
+                {memberStats.total}
+              </p>
             )}
           </div>
         </Card>
@@ -153,7 +155,9 @@ export default function InsightsPage() {
             {loadingStats ? (
               <p className="text-[#9ca3af] text-sm">로딩 중...</p>
             ) : (
-              <p className="text-3xl font-bold text-white">{memberStats.active}</p>
+              <p className="text-3xl font-bold text-white">
+                {memberStats.active}
+              </p>
             )}
           </div>
         </Card>
@@ -296,7 +300,9 @@ export default function InsightsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[#c9c7c7] text-sm">체성분 밸런스</span>
+                    <span className="text-[#c9c7c7] text-sm">
+                      체성분 밸런스
+                    </span>
                     <span className="text-white font-semibold">
                       {formatScore(weeklyData.thisWeek?.body)}
                     </span>
@@ -340,7 +346,9 @@ export default function InsightsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[#c9c7c7] text-sm">체성분 밸런스</span>
+                    <span className="text-[#c9c7c7] text-sm">
+                      체성분 밸런스
+                    </span>
                     <span className="text-white font-semibold">
                       {formatScore(weeklyData.lastWeek?.body)}
                     </span>
@@ -359,37 +367,39 @@ export default function InsightsPage() {
                 주간 변화 요약
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {Object.entries(weeklyData.changes || {}).map(([key, value]) => {
-                  const labels: Record<string, string> = {
-                    strength: "하체 근력",
-                    cardio: "심폐 지구력",
-                    endurance: "근지구력",
-                    flexibility: "유연성",
-                    body: "체성분 밸런스",
-                    stability: "부상 안정성",
-                  };
-                  const numericValue =
-                    typeof value === "number" ? value : Number(value ?? 0);
-                  const isPositive = numericValue >= 0;
-                  return (
-                    <div
-                      key={key}
-                      className="p-3 bg-[#1a1d24] rounded-lg border border-[#374151]"
-                    >
-                      <div className="text-xs text-[#9ca3af] mb-1">
-                        {labels[key]}
-                      </div>
+                {Object.entries(weeklyData.changes || {}).map(
+                  ([key, value]) => {
+                    const labels: Record<string, string> = {
+                      strength: "하체 근력",
+                      cardio: "심폐 지구력",
+                      endurance: "근지구력",
+                      flexibility: "유연성",
+                      body: "체성분 밸런스",
+                      stability: "부상 안정성",
+                    };
+                    const numericValue =
+                      typeof value === "number" ? value : Number(value ?? 0);
+                    const isPositive = numericValue >= 0;
+                    return (
                       <div
-                        className={`text-lg font-bold ${
-                          isPositive ? "text-green-400" : "text-red-400"
-                        }`}
+                        key={key}
+                        className="p-3 bg-[#1a1d24] rounded-lg border border-[#374151]"
                       >
-                        {isPositive ? "+" : ""}
-                        {numericValue.toFixed(1)}
+                        <div className="text-xs text-[#9ca3af] mb-1">
+                          {labels[key]}
+                        </div>
+                        <div
+                          className={`text-lg font-bold ${
+                            isPositive ? "text-green-400" : "text-red-400"
+                          }`}
+                        >
+                          {isPositive ? "+" : ""}
+                          {numericValue.toFixed(1)}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  }
+                )}
               </div>
             </div>
           </Card>
