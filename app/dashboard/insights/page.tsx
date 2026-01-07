@@ -11,6 +11,7 @@ import {
 } from "@/lib/hooks/useInsights";
 import { memberApi } from "@/lib/api/members";
 import { analyticsApi } from "@/lib/api/analytics";
+import type { InsightHexagonResponse } from "@/types/api/responses";
 
 export default function InsightsPage() {
   const [memberStats, setMemberStats] = useState({
