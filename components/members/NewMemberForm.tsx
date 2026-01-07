@@ -18,7 +18,7 @@ interface NewMemberFormData extends CreateMemberRequest {
     condition?: "EXCELLENT" | "GOOD" | "NORMAL" | "POOR";
     trainerComment?: string;
     items: Array<{
-      category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "BODY" | "STABILITY";
+      category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
       name: string;
       value: number;
       unit: string;

@@ -159,7 +159,7 @@ export interface InjuryResponse extends Injury {}
 export interface InjuryRestriction {
   id: string;
   injuryId: string;
-  restrictedCategory: "STRENGTH" | "CARDIO" | "ENDURANCE" | "BODY" | "STABILITY";
+  restrictedCategory: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
   createdAt: string;
 }
 
@@ -216,7 +216,7 @@ export interface MemberComparisonResponse {
 export interface AssessmentItem {
   id: string;
   assessmentId: string;
-  category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "BODY" | "STABILITY";
+  category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
   name: string;
   value: number;
   unit: string;
@@ -227,7 +227,7 @@ export interface AssessmentItem {
 export interface Assessment {
   id: string;
   memberId: string;
-  assessmentType: "INITIAL" | "PERIODIC";
+  assessmentType: "INITIAL" | "PERIODIC" | "FLEXIBILITY";
   isInitial: boolean;
   assessedAt: string;
   trainerComment?: string;

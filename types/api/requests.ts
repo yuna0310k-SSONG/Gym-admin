@@ -53,13 +53,14 @@ export interface CreateInjuryRestrictionRequest {
     | "STRENGTH"
     | "CARDIO"
     | "ENDURANCE"
+    | "FLEXIBILITY"
     | "BODY"
     | "STABILITY";
 }
 
 // 평가 관련 요청
 export interface CreateAssessmentRequest {
-  assessmentType: "INITIAL" | "PERIODIC";
+  assessmentType: "INITIAL" | "PERIODIC" | "FLEXIBILITY";
   assessedAt: string;
   trainerComment?: string;
   bodyWeight?: number;
@@ -68,7 +69,7 @@ export interface CreateAssessmentRequest {
 }
 
 export interface CreateAssessmentItemRequest {
-  category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "BODY" | "STABILITY";
+  category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
   name: string;
   value: number;
   unit: string;
