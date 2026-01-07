@@ -94,6 +94,8 @@ export interface UpdateMemberGoalRequest {
   goal?: string;
   goalProgress?: number; // 0-100
   goalTrainerComment?: string;
+  totalSessions?: number; // 총 세션 수
+  completedSessions?: number; // 완료된 세션 수
 }
 
 // PT 세션 관련 요청

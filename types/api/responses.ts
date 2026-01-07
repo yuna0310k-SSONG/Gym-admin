@@ -253,6 +253,8 @@ export interface MemberGoal {
   goal: string; // 목표 한줄 요약
   goalProgress: number; // 달성률/진행률 (0-100)
   goalTrainerComment?: string; // 트레이너 코멘트
+  totalSessions?: number; // 총 세션 수
+  completedSessions?: number; // 완료된 세션 수
   createdAt: string;
   updatedAt: string;
 }
