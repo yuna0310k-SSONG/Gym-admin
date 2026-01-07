@@ -120,8 +120,7 @@ export interface CreateWorkoutRecordRequest {
   reps?: number;
   sets?: number;
   duration?: number;
-  sessionType?: "PT" | "SELF"; // 임시: 백엔드에서 workoutType으로 변경 필요
-  workoutType?: "PT" | "PERSONAL"; // 백엔드 기대값
+  workoutType: "PT" | "PERSONAL";
   ptSessionId?: string;
   trainerComment?: string;
 }
@@ -134,7 +133,7 @@ export interface UpdateWorkoutRecordRequest {
   reps?: number;
   sets?: number;
   duration?: number;
-  sessionType?: "PT" | "SELF";
+  workoutType?: "PT" | "PERSONAL";
   ptSessionId?: string;
   trainerComment?: string;
 }

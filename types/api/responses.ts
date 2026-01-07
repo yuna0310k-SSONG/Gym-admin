@@ -294,7 +294,7 @@ export interface WorkoutRecord {
   sets?: number; // 세트 수
   volume?: number; // 볼륨 (weight * reps * sets)
   duration?: number; // 운동 시간 (분)
-  sessionType: "PT" | "SELF"; // PT 세션 또는 개인 운동
+  workoutType: "PT" | "PERSONAL"; // PT 세션 또는 개인 운동
   ptSessionId?: string; // PT 세션 ID (PT인 경우)
   trainerComment?: string; // 트레이너 코멘트
   createdAt: string;

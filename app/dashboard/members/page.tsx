@@ -8,6 +8,7 @@ import MemberTable from "@/components/members/MemberTable";
 import Input from "@/components/ui/Input";
 import type { Member } from "@/types/api/responses";
 import { memberApi } from "@/lib/api/members";
+import { onlyDigits } from "@/lib/utils/phone";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -35,12 +36,17 @@ export default function MembersPage() {
     fetchMembers();
   }, []);
 
-  const filteredMembers = members.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.phone.includes(searchTerm)
-  );
+  const filteredMembers = members.filter((member) => {
+    const term = searchTerm.toLowerCase();
+    const phoneTerm = onlyDigits(searchTerm);
+    const memberPhoneDigits = onlyDigits(member.phone);
+
+    return (
+      member.name.toLowerCase().includes(term) ||
+      member.email.toLowerCase().includes(term) ||
+      (phoneTerm.length > 0 && memberPhoneDigits.includes(phoneTerm))
+    );
+  });
 
   if (loading) {
     return (

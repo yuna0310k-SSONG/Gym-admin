@@ -1,6 +1,7 @@
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import type { Member } from "@/types/api/responses";
+import { formatPhoneNumberKR } from "@/lib/utils/phone";
 
 interface MemberProfileProps {
   member: Member;
@@ -33,7 +34,7 @@ export default function MemberProfile({ member }: MemberProfileProps) {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="text-sm font-medium text-[#9ca3af]">전화번호</label>
-            <p className="mt-1 text-[#e5e7eb]">{member.phone}</p>
+            <p className="mt-1 text-[#e5e7eb]">{formatPhoneNumberKR(member.phone)}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-[#9ca3af]">가입일</label>

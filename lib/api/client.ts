@@ -43,15 +43,66 @@ export const apiClient = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData: any = {};
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // JSON 파싱 실패 시 빈 객체 사용
+        errorData = {};
+      }
 
       // 401 에러 처리
       if (response.status === 401) {
         throw new Error("인증이 필요합니다.");
       }
 
+      // 500 에러 처리
+      if (response.status === 500) {
+        console.error("[API Client] 500 Internal Server Error:", {
+          endpoint,
+          errorData,
+        });
+        throw new Error(
+          errorData?.error?.message ||
+            "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+        );
+      }
+
+      // 404 에러 처리
+      if (response.status === 404) {
+        const errorMessage =
+          errorData?.error?.message ||
+          errorData?.message ||
+          "요청한 API 엔드포인트를 찾을 수 없습니다. 백엔드 API가 아직 구현되지 않았을 수 있습니다.";
+        
+        // 일부 엔드포인트는 404가 정상적인 경우임 (예: hexagon, compare)
+        // 이런 경우는 조용히 처리 (warn만 표시)
+        const isOptionalEndpoint =
+          endpoint.includes("/abilities/hexagon") ||
+          endpoint.includes("/abilities/compare");
+        
+        if (isOptionalEndpoint) {
+          // 개발 환경에서만 경고 표시
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[API Client] Optional endpoint not found (404): ${endpoint}`
+            );
+          }
+        } else {
+          // 필수 엔드포인트의 경우만 에러 로그
+          console.error("404 Not Found Error:", {
+            endpoint,
+            status: response.status,
+            errorData,
+          });
+        }
+        throw new Error(errorMessage);
+      }
+
       throw new Error(
-        errorData?.error?.message || `API Error: ${response.statusText}`
+        errorData?.error?.message ||
+          errorData?.message ||
+          `API Error: ${response.statusText} (${response.status})`
       );
     }
 

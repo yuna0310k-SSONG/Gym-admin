@@ -96,5 +96,19 @@ export const workoutRoutineApi = {
       throw new Error("Failed to delete workout routine");
     }
   },
+
+  async complete(
+    routineId: string,
+    memberId: string
+  ): Promise<WorkoutRoutineResponse> {
+    const response = await apiClient.put<ApiResponse<WorkoutRoutineResponse>>(
+      `/api/members/${memberId}/workout-routines/${routineId}/complete`,
+      {}
+    );
+    if ("data" in response) {
+      return response.data;
+    }
+    throw new Error("Failed to complete workout routine");
+  },
 };
 

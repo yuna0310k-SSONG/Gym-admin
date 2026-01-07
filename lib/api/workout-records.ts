@@ -126,16 +126,101 @@ export const workoutRecordApi = {
     memberId: string,
     params: WorkoutCalendarRequest
   ): Promise<WorkoutCalendarResponse> {
-    const queryParams = new URLSearchParams({
-      startDate: params.startDate,
-      endDate: params.endDate,
-    });
-    const response = await apiClient.get<ApiResponse<WorkoutCalendarResponse>>(
-      `/api/members/${memberId}/workout-records/calendar?${queryParams.toString()}`
-    );
-    if ("data" in response) {
-      return response.data;
+    try {
+      // 먼저 캘린더 전용 엔드포인트 시도
+      const queryParams = new URLSearchParams({
+        startDate: params.startDate,
+        endDate: params.endDate,
+      });
+      const response = await apiClient.get<
+        ApiResponse<WorkoutCalendarResponse>
+      >(
+        `/api/members/${memberId}/workout-records/calendar?${queryParams.toString()}`
+      );
+      if ("data" in response) {
+        return response.data;
+      }
+      // 응답에 데이터가 없으면 빈 캘린더 반환
+      return {
+        events: [],
+        startDate: params.startDate,
+        endDate: params.endDate,
+      };
+    } catch (error: any) {
+      // UUID 파싱 에러 또는 라우팅 문제 감지
+      const errorMessage = error?.message || "";
+      const isRoutingError =
+        errorMessage.includes("invalid input syntax for type uuid") ||
+        errorMessage.includes("calendar") ||
+        error?.message?.includes("404") ||
+        error?.message?.includes("500") ||
+        error?.message?.includes("Cannot GET");
+
+      if (isRoutingError) {
+        console.warn(
+          "[Workout Calendar API] Calendar endpoint routing error. 운동 기록 목록 API로 대체합니다:",
+          errorMessage
+        );
+
+        // 백엔드 라우팅 문제가 있을 때 대체 방법: 운동 기록 목록에서 캘린더 데이터 생성
+        try {
+          const workoutRecords = await this.getList(
+            memberId,
+            1,
+            1000, // 충분히 큰 페이지 사이즈
+            params.startDate,
+            params.endDate
+          );
+
+          // 날짜별로 그룹화하여 캘린더 이벤트 생성
+          const eventsMap = new Map<
+            string,
+            { ptSessions: number; selfWorkouts: number }
+          >();
+
+          workoutRecords.records?.forEach((record) => {
+            if (record.workoutDate) {
+              const date = record.workoutDate.split("T")[0]; // YYYY-MM-DD 형식으로 변환
+              if (!eventsMap.has(date)) {
+                eventsMap.set(date, { ptSessions: 0, selfWorkouts: 0 });
+              }
+              const event = eventsMap.get(date)!;
+              if (record.workoutType === "PT") {
+                event.ptSessions += 1;
+              } else if (record.workoutType === "PERSONAL") {
+                event.selfWorkouts += 1;
+              }
+            }
+          });
+
+          // 이벤트 배열로 변환
+          const events = Array.from(eventsMap.entries()).map(
+            ([date, counts]) => ({
+              date,
+              ptSessions: counts.ptSessions,
+              selfWorkouts: counts.selfWorkouts,
+            })
+          );
+
+          return {
+            events,
+            startDate: params.startDate,
+            endDate: params.endDate,
+          };
+        } catch (fallbackError: any) {
+          console.error(
+            "[Workout Calendar API] Fallback method also failed:",
+            fallbackError
+          );
+          // 대체 방법도 실패하면 빈 캘린더 반환
+          return {
+            events: [],
+            startDate: params.startDate,
+            endDate: params.endDate,
+          };
+        }
+      }
+      throw error;
     }
-    throw new Error("Failed to fetch workout calendar");
   },
 };

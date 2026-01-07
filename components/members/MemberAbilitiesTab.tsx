@@ -11,13 +11,24 @@ interface MemberAbilitiesTabProps {
   memberId: string;
 }
 
-export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<"current" | "week" | "month">("current");
+export default function MemberAbilitiesTab({
+  memberId,
+}: MemberAbilitiesTabProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "current" | "week" | "month"
+  >("current");
 
-  const { data: hexagonData, isLoading: hexagonLoading, error: hexagonError } = useQuery({
+  const {
+    data: hexagonData,
+    isLoading: hexagonLoading,
+    error: hexagonError,
+  } = useQuery({
     queryKey: ["abilities", "hexagon", memberId],
     queryFn: () => abilityApi.getHexagon(memberId),
     enabled: !!memberId,
+    retry: false, // 404 에러는 재시도하지 않음
+    // 404 에러는 정상적인 경우이므로 에러로 처리하지 않음
+    throwOnError: false,
   });
 
   const { data: latestData, isLoading: latestLoading } = useQuery({
@@ -30,6 +41,8 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
     queryKey: ["abilities", "compare", memberId],
     queryFn: () => abilityApi.getCompare(memberId, 1),
     enabled: !!memberId,
+    // compareData가 null일 수 있으므로 에러로 처리하지 않음
+    retry: false,
   });
 
   const { data: historyData, isLoading: historyLoading } = useQuery({
@@ -46,20 +59,41 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
     );
   }
 
-  if (hexagonError) {
-    return (
-      <Card className="bg-[#0f1115]">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-red-400">데이터를 불러오는 중 오류가 발생했습니다.</p>
-        </div>
-      </Card>
-    );
-  }
+  // hexagonData가 없으면 latestData를 사용하여 fallback
+  const displayData = hexagonData
+    ? {
+        strength:
+          hexagonData.indicators.find((i) => i.name === "하체 근력")?.score ||
+          0,
+        cardio:
+          hexagonData.indicators.find((i) => i.name === "심폐 지구력")?.score ||
+          0,
+        endurance:
+          hexagonData.indicators.find((i) => i.name === "근지구력")?.score || 0,
+        flexibility:
+          hexagonData.indicators.find((i) => i.name === "유연성")?.score || 0,
+        body:
+          hexagonData.indicators.find((i) => i.name === "체성분 밸런스")
+            ?.score || 0,
+        stability:
+          hexagonData.indicators.find((i) => i.name === "부상 안정성")?.score ||
+          0,
+      }
+    : latestData
+    ? {
+        strength: latestData.strengthScore,
+        cardio: latestData.cardioScore,
+        endurance: latestData.enduranceScore,
+        flexibility: latestData.flexibilityScore,
+        body: latestData.bodyScore,
+        stability: latestData.stabilityScore,
+      }
+    : null;
 
   return (
     <div className="space-y-6">
       {/* 능력치 헥사곤 */}
-      {hexagonData && (
+      {displayData && (
         <div>
           <div className="mb-4 flex space-x-2">
             <button
@@ -93,17 +127,7 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
               월간
             </button>
           </div>
-          <AbilityHexagon
-            data={{
-              strength: hexagonData.indicators.find((i) => i.name === "하체 근력")?.score || 0,
-              cardio: hexagonData.indicators.find((i) => i.name === "심폐 지구력")?.score || 0,
-              endurance: hexagonData.indicators.find((i) => i.name === "근지구력")?.score || 0,
-              flexibility: hexagonData.indicators.find((i) => i.name === "유연성")?.score || 0,
-              body: hexagonData.indicators.find((i) => i.name === "체성분 밸런스")?.score || 0,
-              stability: hexagonData.indicators.find((i) => i.name === "부상 안정성")?.score || 0,
-            }}
-            title="능력치 헥사곤"
-          />
+          <AbilityHexagon data={displayData} title="능력치 헥사곤" />
         </div>
       )}
 
@@ -113,35 +137,50 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <span className="text-[#c9c7c7] text-sm">종합 점수</span>
-              <p className="text-white text-2xl font-bold">{latestData.totalScore.toFixed(1)}</p>
+              <p className="text-white text-2xl font-bold">
+                {latestData.totalScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">근력 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.strengthScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.strengthScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">심폐 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.cardioScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.cardioScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">지구력 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.enduranceScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.enduranceScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">유연성 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.flexibilityScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.flexibilityScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">신체 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.bodyScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.bodyScore.toFixed(1)}
+              </p>
             </div>
             <div>
               <span className="text-[#c9c7c7] text-sm">안정성 점수</span>
-              <p className="text-white text-xl font-semibold">{latestData.stabilityScore.toFixed(1)}</p>
+              <p className="text-white text-xl font-semibold">
+                {latestData.stabilityScore.toFixed(1)}
+              </p>
             </div>
           </div>
           <p className="text-[#c9c7c7] text-sm mt-4">
-            평가 시점: {new Date(latestData.assessedAt).toLocaleDateString("ko-KR")}
+            평가 시점:{" "}
+            {new Date(latestData.assessedAt).toLocaleDateString("ko-KR")}
           </p>
         </Card>
       )}
@@ -161,18 +200,29 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
                 stabilityScore: "안정성 점수",
               };
               const isPositive = value >= 0;
-              const percentage = compareData.percentageChange[key as keyof typeof compareData.percentageChange];
+              const percentage =
+                compareData.percentageChange[
+                  key as keyof typeof compareData.percentageChange
+                ];
               return (
                 <div key={key} className="p-4 bg-[#1a1d24] rounded-lg">
-                  <span className="text-[#c9c7c7] text-sm block mb-2">{labels[key]}</span>
+                  <span className="text-[#c9c7c7] text-sm block mb-2">
+                    {labels[key]}
+                  </span>
                   <div className="flex items-baseline space-x-2">
                     <span
-                      className={`text-xl font-bold ${isPositive ? "text-green-400" : "text-red-400"}`}
+                      className={`text-xl font-bold ${
+                        isPositive ? "text-green-400" : "text-red-400"
+                      }`}
                     >
                       {isPositive ? "+" : ""}
                       {value.toFixed(1)}
                     </span>
-                    <span className={`text-sm ${isPositive ? "text-green-400" : "text-red-400"}`}>
+                    <span
+                      className={`text-sm ${
+                        isPositive ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
                       ({isPositive ? "+" : ""}
                       {percentage.toFixed(1)}%)
                     </span>
@@ -197,7 +247,9 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
                   {item.indicators.map((indicator) => (
                     <div key={indicator.name} className="flex justify-between">
                       <span className="text-[#c9c7c7]">{indicator.name}:</span>
-                      <span className="text-white font-semibold">{indicator.score.toFixed(1)}</span>
+                      <span className="text-white font-semibold">
+                        {indicator.score.toFixed(1)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -209,5 +261,3 @@ export default function MemberAbilitiesTab({ memberId }: MemberAbilitiesTabProps
     </div>
   );
 }
-
-

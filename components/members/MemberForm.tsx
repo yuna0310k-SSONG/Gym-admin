@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import type { CreateMemberRequest } from "@/types/api/requests";
 import type { Member } from "@/types/api/responses";
+import { onlyDigits, formatPhoneNumberKR } from "@/lib/utils/phone";
 
 interface MemberFormProps {
   member?: Member;
@@ -27,7 +28,7 @@ export default function MemberForm({
       ? {
           name: member.name,
           email: member.email,
-          phone: member.phone,
+          phone: formatPhoneNumberKR(member.phone), // 기존 값도 하이픈 형식으로 표시
           joinDate: member.joinDate.split("T")[0],
         }
       : {
@@ -58,17 +59,51 @@ export default function MemberForm({
           })}
           error={errors.email?.message}
         />
-        <Input
-          label="전화번호"
-          {...register("phone", {
+        {(() => {
+          const phoneField = register("phone", {
             required: "전화번호를 입력해주세요",
-            pattern: {
-              value: /^[0-9-]+$/,
-              message: "올바른 전화번호 형식이 아닙니다",
+            validate: (value) => {
+              const digits = onlyDigits(String(value ?? ""));
+              if (digits.length === 0) return "전화번호를 입력해주세요";
+              if (digits.length !== 10 && digits.length !== 11) {
+                return "전화번호는 10~11자리로 입력해주세요";
+              }
+              return true;
             },
-          })}
-          error={errors.phone?.message}
-        />
+            setValueAs: (value) => {
+              // 저장 시 숫자만 저장
+              return onlyDigits(String(value ?? ""));
+            },
+          });
+
+          return (
+            <div className="space-y-1">
+              <Input
+                label="전화번호"
+                type="tel"
+                inputMode="numeric"
+                placeholder="010-2222-2222"
+                maxLength={13}
+                {...phoneField}
+                onChange={(e) => {
+                  const digits = onlyDigits(e.target.value).slice(0, 11);
+                  // 입력 중에는 하이픈이 포함된 형식으로 표시
+                  const formatted = formatPhoneNumberKR(digits);
+                  e.target.value = formatted;
+                  // react-hook-form에는 숫자만 전달
+                  phoneField.onChange({
+                    ...e,
+                    target: { ...e.target, value: digits },
+                  });
+                }}
+                error={errors.phone?.message}
+              />
+              <p className="text-xs text-[#9ca3af]">
+                전화번호를 입력하면 자동으로 하이픈이 추가됩니다
+              </p>
+            </div>
+          );
+        })()}
         <Input
           label="가입일"
           type="date"

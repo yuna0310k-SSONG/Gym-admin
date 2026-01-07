@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import type { Member } from "@/types/api/responses";
+import { formatPhoneNumberKR } from "@/lib/utils/phone";
 
 interface MemberTableProps {
   members: Member[];
@@ -46,7 +47,9 @@ export default function MemberTable({ members }: MemberTableProps) {
           >
             <TableCell className="text-[#e5e7eb]">{member.name}</TableCell>
             <TableCell className="text-[#9ca3af]">{member.email}</TableCell>
-            <TableCell className="text-[#9ca3af]">{member.phone}</TableCell>
+            <TableCell className="text-[#9ca3af]">
+              {formatPhoneNumberKR(member.phone)}
+            </TableCell>
             <TableCell className="text-[#9ca3af]">
               {new Date(member.joinDate).toLocaleDateString("ko-KR")}
             </TableCell>
