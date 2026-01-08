@@ -67,10 +67,21 @@ export const abilityApi = {
     }
   },
 
-  async getHexagon(memberId: string): Promise<AbilityHexagonResponse | null> {
+  /**
+   * 능력치 헥사곤 데이터 조회
+   *
+   * @param memberId 회원 ID
+   * @param includeInitial true인 경우 `?compare=true` 쿼리로 초기 평가 데이터를 함께 요청
+   */
+  async getHexagon(
+    memberId: string,
+    includeInitial: boolean = false
+  ): Promise<AbilityHexagonResponse | null> {
     try {
       const response = await apiClient.get<ApiResponse<AbilityHexagonResponse> | null>(
-        `/api/members/${memberId}/abilities/hexagon`
+        `/api/members/${memberId}/abilities/hexagon${
+          includeInitial ? "?compare=true" : ""
+        }`
       );
       
       // 선택적 엔드포인트의 경우 null이 반환될 수 있음

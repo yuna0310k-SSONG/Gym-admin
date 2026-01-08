@@ -96,3 +96,4 @@ export default function InjuryList({ injuries, onEdit, onDelete }: InjuryListPro
 
 
 
+

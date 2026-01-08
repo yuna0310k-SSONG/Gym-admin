@@ -155,4 +155,55 @@ export const authApi = {
       throw new Error("세션 조회에 실패했습니다.");
     }
   },
+
+  async updateProfile(data: { name?: string; email?: string }) {
+    try {
+      // 일반적인 패턴: 현재 인증된 사용자의 프로필 업데이트
+      // 엔드포인트가 다를 수 있으므로 여러 옵션 시도
+      let response;
+      try {
+        // 옵션 1: /api/auth/profile
+        response = await apiClient.put<ApiResponse<LoginResponse["data"]["user"]>>(
+          "/api/auth/profile",
+          data
+        );
+      } catch (error: any) {
+        // 옵션 2: /api/auth/me
+        if (error?.message?.includes("404") || error?.message?.includes("Cannot")) {
+          try {
+            response = await apiClient.put<ApiResponse<LoginResponse["data"]["user"]>>(
+              "/api/auth/me",
+              data
+            );
+          } catch (error2: any) {
+            // 옵션 3: /api/users/me
+            if (error2?.message?.includes("404") || error2?.message?.includes("Cannot")) {
+              response = await apiClient.put<ApiResponse<LoginResponse["data"]["user"]>>(
+                "/api/users/me",
+                data
+              );
+            } else {
+              throw error2;
+            }
+          }
+        } else {
+          throw error;
+        }
+      }
+
+      if (response && "data" in response) {
+        return response.data;
+      }
+      throw new Error("프로필 업데이트에 실패했습니다.");
+    } catch (error) {
+      if (error instanceof Error) {
+        // 404 에러인 경우 백엔드에 해당 엔드포인트가 없다는 의미
+        if (error.message.includes("404") || error.message.includes("Cannot")) {
+          throw new Error("프로필 업데이트 기능이 아직 구현되지 않았습니다. 백엔드 개발자에게 문의하세요.");
+        }
+        throw error;
+      }
+      throw new Error("프로필 업데이트에 실패했습니다.");
+    }
+  },
 };

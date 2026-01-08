@@ -121,13 +121,27 @@ export interface AbilityComparisonResponse {
   };
 }
 
-export interface AbilityHexagonResponse {
-  indicators: Array<{
-    name: string;
-    score: number;
-  }>;
+// 레이더 차트 지표 데이터 (헥사곤)
+export interface AbilityIndicator {
+  name: string;
+  score: number;
+}
+
+// 헥사곤 단일 데이터셋 (백엔드 HexagonData와 동일)
+export interface AbilityHexagonDataset {
+  indicators: AbilityIndicator[];
   assessedAt: string;
   version: string;
+}
+
+// 헥사곤 응답의 data 필드 (현재 + 선택적 초기 평가)
+// 백엔드 HexagonData | HexagonDataWithComparison 와 대응
+export interface AbilityHexagonResponse extends AbilityHexagonDataset {
+  /**
+   * 초기 평가 데이터
+   * - 초기 평가가 없으면 null 또는 undefined
+   */
+  initial?: AbilityHexagonDataset | null;
 }
 
 export interface AbilityHistoryResponse {

@@ -10,9 +10,10 @@ interface InjuryFormProps {
   onSubmit: (data: CreateInjuryRequest) => void | Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<CreateInjuryRequest>;
+  isEditMode?: boolean;
 }
 
-export default function InjuryForm({ onSubmit, onCancel, initialData }: InjuryFormProps) {
+export default function InjuryForm({ onSubmit, onCancel, initialData, isEditMode = false }: InjuryFormProps) {
   const {
     register,
     handleSubmit,
@@ -26,7 +27,7 @@ export default function InjuryForm({ onSubmit, onCancel, initialData }: InjuryFo
   });
 
   return (
-    <Card title="부상 이력 등록" className="bg-[#0f1115]">
+    <Card title={isEditMode ? "부상 이력 수정" : "부상 이력 등록"} className="bg-[#0f1115]">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="부상 유형"
@@ -94,13 +95,14 @@ export default function InjuryForm({ onSubmit, onCancel, initialData }: InjuryFo
             </Button>
           )}
           <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "등록 중..." : "등록"}
+            {isSubmitting ? (isEditMode ? "수정 중..." : "등록 중...") : (isEditMode ? "수정" : "등록")}
           </Button>
         </div>
       </form>
     </Card>
   );
 }
+
 
 
 

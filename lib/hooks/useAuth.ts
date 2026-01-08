@@ -102,10 +102,15 @@ export function useAuth() {
     });
   };
 
+  const refreshUser = async () => {
+    await checkSession();
+  };
+
   return {
     ...authState,
     login,
     logout,
     checkSession,
+    refreshUser,
   };
 }

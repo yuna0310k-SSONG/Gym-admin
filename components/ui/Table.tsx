@@ -12,12 +12,13 @@ interface TableHeaderProps {
 interface TableRowProps {
   children: ReactNode;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 interface TableCellProps {
   children: ReactNode;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export function Table({ children, className = "" }: TableProps) {
@@ -49,17 +50,29 @@ export function TableRow({ children, className = "", onClick }: TableRowProps) {
   );
 }
 
-export function TableCell({ children, className = "" }: TableCellProps) {
+export function TableCell({ children, className = "", onClick }: TableCellProps) {
   return (
-    <td className={`px-6 py-4 whitespace-nowrap text-sm text-[#e5e7eb] ${className}`}>
+    <td
+      className={`px-6 py-4 whitespace-nowrap text-sm text-[#e5e7eb] ${className}`}
+      onClick={onClick}
+    >
       {children}
     </td>
   );
 }
 
-export function TableHeaderCell({ children, className = "" }: TableCellProps) {
+interface TableHeaderCellProps {
+  children: ReactNode;
+  className?: string;
+  onClick?: () => void;
+}
+
+export function TableHeaderCell({ children, className = "", onClick }: TableHeaderCellProps) {
   return (
-    <th className={`px-6 py-3 text-left text-xs font-medium text-[#9ca3af] uppercase tracking-wider ${className}`}>
+    <th
+      className={`px-6 py-3 text-left text-xs font-medium text-[#9ca3af] uppercase tracking-wider ${className}`}
+      onClick={onClick}
+    >
       {children}
     </th>
   );

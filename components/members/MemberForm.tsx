@@ -33,9 +33,11 @@ export default function MemberForm({
           height: member.height,
           weight: member.weight,
           gender: member.gender,
+          status: member.status, // 상태도 기본값에 포함
         }
       : {
           joinDate: new Date().toISOString().split("T")[0],
+          status: "ACTIVE", // 새 회원 등록 시 기본값
         },
   });
 
@@ -155,27 +157,25 @@ export default function MemberForm({
             <p className="mt-1 text-sm text-red-400">{errors.gender.message}</p>
           )}
         </div>
-        {!member && (
-          <div>
-            <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-              상태
-            </label>
-            <select
-              {...register("status")}
-              className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              defaultValue="ACTIVE"
-            >
-              <option value="ACTIVE">활성</option>
-              <option value="INACTIVE">비활성</option>
-              <option value="SUSPENDED">정지</option>
-            </select>
-            {errors.status && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors.status.message}
-              </p>
-            )}
-          </div>
-        )}
+        <div>
+          <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+            상태
+          </label>
+          <select
+            {...register("status")}
+            className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            defaultValue={member?.status || "ACTIVE"}
+          >
+            <option value="ACTIVE">활성</option>
+            <option value="INACTIVE">비활성</option>
+            <option value="SUSPENDED">정지</option>
+          </select>
+          {errors.status && (
+            <p className="mt-1 text-sm text-red-400">
+              {errors.status.message}
+            </p>
+          )}
+        </div>
         <div className="flex justify-end space-x-3 pt-4">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>

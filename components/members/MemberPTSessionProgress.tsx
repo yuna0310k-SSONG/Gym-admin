@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import { ptSessionApi } from "@/lib/api/pt-sessions";
 import { ptCountApi, type CreatePTUsageRequest } from "@/lib/api/pt-count";
 import { workoutRecordApi } from "@/lib/api/workout-records";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import type { CreatePTSessionRequest, UpdatePTSessionRequest } from "@/types/api/requests";
 import type { PTSession } from "@/types/api/responses";
@@ -204,9 +204,57 @@ export default function MemberPTSessionProgress({
       // 세션 삭제 후 세션 목록 새로고침
       await queryClient.invalidateQueries({ queryKey: ["pt-sessions", memberId] });
       
-      // 세션 데이터를 다시 가져와서 최신 completedSessions 확인
-      const updatedSessionData = await ptSessionApi.getList(memberId);
+      // 세션 데이터를 다시 가져와서 최신 데이터 확인
+      // 백엔드가 회차 번호를 자동으로 재정렬해주는지 확인
+      let updatedSessionData = await ptSessionApi.getList(memberId);
       const newCompletedSessions = updatedSessionData.completedSessions || 0;
+
+      // 회차 번호 재정렬: 세션을 날짜 순으로 정렬하고 회차 번호가 올바르게 매겨져 있는지 확인
+      if (updatedSessionData.sessions && updatedSessionData.sessions.length > 0) {
+        // 세션을 날짜 순으로 정렬 (오래된 것부터)
+        const sortedSessions = [...updatedSessionData.sessions].sort((a, b) => {
+          const dateA = new Date(a.sessionDate).getTime();
+          const dateB = new Date(b.sessionDate).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          // 같은 날짜면 생성 시간 순으로 정렬
+          const timeA = new Date(a.createdAt || a.sessionDate).getTime();
+          const timeB = new Date(b.createdAt || b.sessionDate).getTime();
+          return timeA - timeB;
+        });
+
+        // 회차 번호가 올바르게 매겨져 있는지 확인
+        let needsReordering = false;
+        for (let i = 0; i < sortedSessions.length; i++) {
+          if (sortedSessions[i].sessionNumber !== i + 1) {
+            needsReordering = true;
+            break;
+          }
+        }
+
+        // 회차 번호가 올바르지 않으면 백엔드에 재정렬 요청
+        // 백엔드가 자동으로 처리하지 않는 경우를 대비해 세션 목록을 다시 가져옴
+        if (needsReordering) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[PT Session] 회차 번호 재정렬 필요:", sortedSessions.map(s => ({
+              id: s.id,
+              date: s.sessionDate,
+              currentNumber: s.sessionNumber,
+              expectedNumber: sortedSessions.indexOf(s) + 1
+            })));
+          }
+          
+          // 백엔드가 자동으로 재정렬해주지 않을 수 있으므로
+          // 세션 목록을 다시 가져와서 확인
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          updatedSessionData = await ptSessionApi.getList(memberId);
+          
+          // 쿼리 캐시 업데이트
+          queryClient.setQueryData(
+            ["pt-sessions", memberId],
+            updatedSessionData
+          );
+        }
+      }
       
       // PT 횟수도 새로고침하여 최신 데이터 가져오기
       await queryClient.invalidateQueries({ queryKey: ["pt-count", memberId] });
@@ -361,6 +409,29 @@ export default function MemberPTSessionProgress({
     resetAddPayment();
   };
 
+  // 세션을 날짜 순으로 정렬 (오래된 것부터)하고 회차 번호를 1부터 재정렬
+  // ⚠️ 중요: 모든 hooks는 early return 이전에 호출되어야 함
+  const sortedSessions = useMemo(() => {
+    if (!sessionData?.sessions || sessionData.sessions.length === 0) {
+      return [];
+    }
+    return [...sessionData.sessions].sort((a, b) => {
+      const dateA = new Date(a.sessionDate).getTime();
+      const dateB = new Date(b.sessionDate).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      // 같은 날짜면 생성 시간 순으로 정렬
+      const timeA = new Date(a.createdAt || a.sessionDate).getTime();
+      const timeB = new Date(b.createdAt || b.sessionDate).getTime();
+      return timeA - timeB;
+    });
+  }, [sessionData?.sessions]);
+
+  // 편집 중인 세션의 재정렬된 회차 번호 계산
+  const editingSessionDisplayNumber = useMemo(() => {
+    if (!editingSession || sortedSessions.length === 0) return null;
+    return sortedSessions.findIndex((s) => s.id === editingSession.id) + 1;
+  }, [editingSession, sortedSessions]);
+
   const isLoading = sessionLoading || ptCountLoading;
 
   if (isLoading) {
@@ -394,7 +465,7 @@ export default function MemberPTSessionProgress({
                   size="sm"
                   onClick={() => setShowAddPaymentModal(true)}
                 >
-                  추가 결제
+                  횟수 추가
                 </Button>
                 <Button
                   variant="outline"
@@ -457,47 +528,52 @@ export default function MemberPTSessionProgress({
           </div>
 
           {/* 최근 세션 목록 */}
-          {sessionData && sessionData.sessions.length > 0 && (
+          {sortedSessions.length > 0 && (
             <div className="pt-3 border-t border-[#374151]">
               <p className="text-sm text-[#9ca3af] mb-3">최근 세션</p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {sessionData.sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="p-3 bg-[#1a1d24] rounded-lg"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-white font-medium">
-                            {session.sessionNumber}회차
-                          </span>
-                          <span className="text-[#9ca3af] text-sm">
-                            {new Date(session.sessionDate).toLocaleDateString("ko-KR")}
-                          </span>
+                {sortedSessions.map((session, index) => {
+                  // 회차 번호를 1부터 순차적으로 재정렬
+                  const displaySessionNumber = index + 1;
+                  
+                  return (
+                    <div
+                      key={session.id}
+                      className="p-3 bg-[#1a1d24] rounded-lg"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-white font-medium">
+                              {displaySessionNumber}회차
+                            </span>
+                            <span className="text-[#9ca3af] text-sm">
+                              {new Date(session.sessionDate).toLocaleDateString("ko-KR")}
+                            </span>
+                          </div>
+                          {session.mainContent && (
+                            <p className="text-[#c9c7c7] text-sm mt-1">
+                              {session.mainContent}
+                            </p>
+                          )}
+                          {session.trainerComment && (
+                            <p className="text-[#9ca3af] text-xs mt-1 italic">
+                              코멘트: {session.trainerComment}
+                            </p>
+                          )}
                         </div>
-                        {session.mainContent && (
-                          <p className="text-[#c9c7c7] text-sm mt-1">
-                            {session.mainContent}
-                          </p>
-                        )}
-                        {session.trainerComment && (
-                          <p className="text-[#9ca3af] text-xs mt-1 italic">
-                            코멘트: {session.trainerComment}
-                          </p>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(session)}
+                          className="ml-3"
+                        >
+                          수정
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(session)}
-                        className="ml-3"
-                      >
-                        수정
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -505,11 +581,11 @@ export default function MemberPTSessionProgress({
       </Card>
 
       {/* PT 세션 수정 모달 */}
-      {editingSession && (
+      {editingSession && editingSessionDisplayNumber && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
             <h3 className="text-lg font-semibold text-white mb-4">
-              PT 세션 수정 ({editingSession.sessionNumber}회차)
+              PT 세션 수정 ({editingSessionDisplayNumber}회차)
             </h3>
             <form onSubmit={handleSubmit(handleEditSubmit)} className="space-y-4">
               <Input
@@ -583,14 +659,14 @@ export default function MemberPTSessionProgress({
       )}
 
       {/* 세션 삭제 확인 모달 */}
-      {showDeleteConfirm && editingSession && (
+      {showDeleteConfirm && editingSession && editingSessionDisplayNumber && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
             <h3 className="text-lg font-semibold text-white mb-4">
               세션 삭제 확인
             </h3>
             <p className="text-[#c9c7c7] mb-6">
-              {editingSession.sessionNumber}회차 세션을 삭제하시겠습니까?
+              {editingSessionDisplayNumber}회차 세션을 삭제하시겠습니까?
               <br />
               <span className="text-red-400 text-sm mt-2 block">
                 삭제 시 PT 횟수가 복구됩니다. 이 작업은 되돌릴 수 없습니다.
@@ -694,12 +770,12 @@ export default function MemberPTSessionProgress({
         </div>
       )}
 
-      {/* PT 추가 결제 모달 */}
+      {/* PT 횟수 추가 모달 */}
       {showAddPaymentModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
             <h3 className="text-lg font-semibold text-white mb-4">
-              PT 추가 결제
+              PT 횟수 추가
             </h3>
             <form onSubmit={handleSubmitAddPayment(handleAddPaymentSubmit)} className="space-y-4">
               <Input

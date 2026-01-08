@@ -7,6 +7,8 @@ import MemberForm from "@/components/members/MemberForm";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import AlertModal from "@/components/ui/AlertModal";
+import Skeleton, { CardSkeleton } from "@/components/ui/Skeleton";
+import { useToast } from "@/providers/ToastProvider";
 import { memberApi } from "@/lib/api/members";
 import type { Member } from "@/types/api/responses";
 import type { CreateMemberRequest } from "@/types/api/requests";
@@ -14,19 +16,11 @@ import type { CreateMemberRequest } from "@/types/api/requests";
 export default function EditMemberPage() {
   const params = useParams();
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [alertModal, setAlertModal] = useState<{
-    isOpen: boolean;
-    title?: string;
-    message: string;
-    type?: "info" | "success" | "error" | "warning";
-  }>({
-    isOpen: false,
-    message: "",
-  });
 
   const memberId = params.id as string;
 
@@ -60,20 +54,20 @@ export default function EditMemberPage() {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        // 상태는 별도 API 설계에 따라 확장 가능
+        status: data.status,
+        height: data.height,
+        weight: data.weight,
+        gender: data.gender,
       });
+      showSuccess("회원 정보가 수정되었습니다.");
       router.push(`/dashboard/members/${memberId}`);
     } catch (err) {
       console.error("회원 수정 실패:", err);
-      setAlertModal({
-        isOpen: true,
-        title: "회원 정보 수정 실패",
-        message:
-          err instanceof Error
-            ? err.message
-            : "회원 정보 수정에 실패했습니다. 다시 시도해주세요.",
-        type: "error",
-      });
+      showError(
+        err instanceof Error
+          ? err.message
+          : "회원 정보 수정에 실패했습니다. 다시 시도해주세요."
+      );
     } finally {
       setSaving(false);
     }
@@ -85,8 +79,12 @@ export default function EditMemberPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-[#9ca3af]">회원 정보를 불러오는 중...</p>
+      <div className="max-w-2xl mx-auto px-6 py-6">
+        <div className="mb-6">
+          <Skeleton height={24} width={200} className="mb-2" />
+          <Skeleton height={36} width={400} />
+        </div>
+        <CardSkeleton />
       </div>
     );
   }
@@ -127,15 +125,6 @@ export default function EditMemberPage() {
           </div>
         )}
       </div>
-
-      {/* Alert 모달 */}
-      <AlertModal
-        isOpen={alertModal.isOpen}
-        title={alertModal.title}
-        message={alertModal.message}
-        type={alertModal.type}
-        onClose={() => setAlertModal({ isOpen: false, message: "" })}
-      />
     </div>
   );
 }

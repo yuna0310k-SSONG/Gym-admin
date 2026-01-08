@@ -146,3 +146,4 @@ export interface WorkoutRecordListResponse {
 **상태**: 백엔드 변경사항 반영 완료 ✅
 
 
+

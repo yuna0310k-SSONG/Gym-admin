@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import MemberProfile from "@/components/members/MemberProfile";
 import Card from "@/components/ui/Card";
 import Tabs from "@/components/ui/Tabs";
+import Skeleton, { CardSkeleton } from "@/components/ui/Skeleton";
 import MemberAbilitiesTab from "@/components/members/MemberAbilitiesTab";
 import MemberInjuriesTab from "@/components/members/MemberInjuriesTab";
 import MemberAnalyticsTab from "@/components/members/MemberAnalyticsTab";
@@ -92,8 +93,19 @@ export default function MemberDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-[#c9c7c7]">로딩 중...</p>
+      <div className="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton height={36} width={300} />
+          <div className="flex gap-3">
+            <Skeleton height={40} width={80} />
+            <Skeleton height={40} width={80} />
+          </div>
+        </div>
+        <CardSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       </div>
     );
   }

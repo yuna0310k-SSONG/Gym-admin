@@ -7,7 +7,7 @@ import InjuryForm from "@/components/health/InjuryForm";
 import InjuryList from "@/components/members/InjuryList";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { injuryApi } from "@/lib/api/injuries";
-import type { CreateInjuryRequest } from "@/types/api/requests";
+import type { CreateInjuryRequest, UpdateInjuryRequest } from "@/types/api/requests";
 import type { Injury } from "@/types/api/responses";
 
 interface MemberInjuriesTabProps {
@@ -30,11 +30,36 @@ export default function MemberInjuriesTab({ memberId }: MemberInjuriesTabProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["injuries", memberId] });
       setShowForm(false);
+      setEditingInjury(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ injuryId, data }: { injuryId: string; data: UpdateInjuryRequest }) =>
+      injuryApi.updateInjury(memberId, injuryId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["injuries", memberId] });
+      setShowForm(false);
+      setEditingInjury(null);
     },
   });
 
   const handleSubmit = async (data: CreateInjuryRequest) => {
-    await createMutation.mutateAsync(data);
+    if (editingInjury) {
+      // 수정 모드
+      const updateData: UpdateInjuryRequest = {
+        injuryType: data.injuryType,
+        bodyPart: data.bodyPart,
+        date: data.date,
+        severity: data.severity,
+        description: data.description,
+        recoveryStatus: data.recoveryStatus,
+      };
+      await updateMutation.mutateAsync({ injuryId: editingInjury.id, data: updateData });
+    } else {
+      // 생성 모드
+      await createMutation.mutateAsync(data);
+    }
   };
 
   const handleEdit = (injury: Injury) => {
@@ -85,7 +110,19 @@ export default function MemberInjuriesTab({ memberId }: MemberInjuriesTabProps) 
             setShowForm(false);
             setEditingInjury(null);
           }}
-          initialData={editingInjury || undefined}
+          initialData={
+            editingInjury
+              ? {
+                  injuryType: editingInjury.injuryType,
+                  bodyPart: editingInjury.bodyPart,
+                  date: editingInjury.date.split("T")[0],
+                  severity: editingInjury.severity,
+                  description: editingInjury.description,
+                  recoveryStatus: editingInjury.recoveryStatus,
+                }
+              : undefined
+          }
+          isEditMode={!!editingInjury}
         />
       )}
 
@@ -101,6 +138,7 @@ export default function MemberInjuriesTab({ memberId }: MemberInjuriesTabProps) 
     </div>
   );
 }
+
 
 
 
