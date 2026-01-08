@@ -147,8 +147,28 @@ export default function NewMemberPage() {
             type: "success",
           });
         } catch (error: any) {
-          // FLEXIBILITY enum 에러인 경우, 유연성 항목을 제외하고 재시도
           const errorMessage = error?.message || "";
+          
+          // 1. 초기 평가 중복 에러 체크 (최우선)
+          const isInitialAssessmentDuplicateError =
+            errorMessage.includes("초기 평가는 이미 존재합니다") ||
+            errorMessage.includes("초기 평가가 이미 존재합니다") ||
+            errorMessage.includes("INITIAL_ASSESSMENT_ALREADY_EXISTS") ||
+            errorMessage.includes("initial assessment already exists");
+
+          if (isInitialAssessmentDuplicateError) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
+              );
+            }
+            // 이미 초기 평가가 존재하므로 성공으로 처리
+            setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
+            // 중복 에러이지만 이미 생성되었으므로 성공으로 처리하고 계속 진행
+            return;
+          }
+
+          // 2. FLEXIBILITY enum 에러 체크
           const isFlexibilityEnumError =
             errorMessage.includes(
               "invalid input value for enum category_type"
@@ -160,6 +180,30 @@ export default function NewMemberPage() {
             console.warn(
               "[New Member] FLEXIBILITY enum 에러 감지. 유연성 항목을 제외하고 재시도합니다."
             );
+
+            // 재시도 전에 기존 초기 평가 존재 여부 확인
+            try {
+              const existingAssessments = await assessmentApi.getAssessments(memberId);
+              const hasInitialAssessment = existingAssessments.assessments?.some(
+                (assessment) => assessment.assessmentType === "INITIAL"
+              ) || false;
+
+              if (hasInitialAssessment) {
+                if (process.env.NODE_ENV === "development") {
+                  console.warn(
+                    "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
+                  );
+                }
+                // 이미 초기 평가가 존재하므로 성공으로 처리
+                setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
+                return;
+              }
+            } catch (checkError) {
+              if (process.env.NODE_ENV === "development") {
+                console.error("기존 평가 확인 실패:", checkError);
+              }
+              // 확인 실패해도 재시도는 진행 (기존 평가가 없을 수도 있음)
+            }
 
             // 유연성 항목 제외
             const itemsWithoutFlexibility = initialAssessment.items.filter(
@@ -200,7 +244,27 @@ export default function NewMemberPage() {
                       "백엔드 데이터베이스의 category_type enum에 FLEXIBILITY를 추가해야 합니다."
                   );
                 }
-              } catch (retryError) {
+              } catch (retryError: any) {
+                const retryErrorMessage = retryError?.message || "";
+                
+                // 재시도 중에도 초기 평가 중복 에러 체크
+                const isRetryDuplicateError =
+                  retryErrorMessage.includes("초기 평가는 이미 존재합니다") ||
+                  retryErrorMessage.includes("초기 평가가 이미 존재합니다") ||
+                  retryErrorMessage.includes("INITIAL_ASSESSMENT_ALREADY_EXISTS") ||
+                  retryErrorMessage.includes("initial assessment already exists");
+
+                if (isRetryDuplicateError) {
+                  if (process.env.NODE_ENV === "development") {
+                    console.warn(
+                      "[New Member] 재시도 중 초기 평가 중복 감지. 성공으로 처리합니다."
+                    );
+                  }
+                  // 중복이지만 이미 생성되었으므로 성공으로 처리
+                  setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
+                  return;
+                }
+
                 console.error("평가 항목 등록 재시도 실패:", retryError);
                 throw new Error(
                   `평가 항목 등록에 실패했습니다: ${
@@ -251,7 +315,7 @@ export default function NewMemberPage() {
         }
       }
 
-      // 성공 시 알림 표시 후 회원 목록으로 이동
+      // 성공 시 알림 표시 후 회원 상세 페이지로 이동
       setSubmitProgress("완료!");
       setAlertModal({
         isOpen: true,
@@ -259,7 +323,7 @@ export default function NewMemberPage() {
         message: "회원이 성공적으로 등록되었습니다.",
         type: "success",
         onConfirm: () => {
-          router.push("/dashboard/members");
+          router.push(`/dashboard/members/${memberId}`);
         },
       });
     } catch (error) {

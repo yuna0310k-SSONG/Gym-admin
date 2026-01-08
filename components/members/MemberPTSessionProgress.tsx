@@ -36,7 +36,6 @@ export default function MemberPTSessionProgress({
   memberId,
 }: MemberPTSessionProgressProps) {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSession, setEditingSession] = useState<PTSession | null>(null);
   const [showPTCountModal, setShowPTCountModal] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -144,170 +143,6 @@ export default function MemberPTSessionProgress({
     }
   }, [sessionData, ptCount, memberId, queryClient]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: CreatePTSessionRequest) => {
-      // 중복 방지: 해당 날짜에 이미 세션이 있는지 확인
-      const sessionDate = data.sessionDate.split("T")[0];
-      const existingSessions = await ptSessionApi.getList(memberId);
-      const sessionsForDate = existingSessions.sessions?.filter(
-        (session) => session.sessionDate.split("T")[0] === sessionDate
-      ) || [];
-
-      // 이미 해당 날짜에 세션이 있으면 생성하지 않고 기존 세션 반환
-      if (sessionsForDate.length > 0) {
-        const latestSession = sessionsForDate.sort((a, b) => {
-          const timeA = new Date(a.createdAt || a.sessionDate).getTime();
-          const timeB = new Date(b.createdAt || b.sessionDate).getTime();
-          if (timeB !== timeA) return timeB - timeA;
-          return b.id.localeCompare(a.id);
-        })[0];
-        
-        console.log("[PT Session] 해당 날짜에 이미 PT 세션이 존재하여 생성하지 않음:", sessionDate);
-        return latestSession;
-      }
-
-      // 해당 날짜에 세션이 없으면 새로 생성
-      console.log("[PT Session] PT 세션 생성:", sessionDate);
-      return ptSessionApi.create(memberId, data);
-    },
-    onSuccess: async (createdSession, variables) => {
-      const sessionDate = variables.sessionDate.split("T")[0];
-      
-      // 세션 목록을 먼저 새로고침하여 최신 세션 수를 가져옴
-      await queryClient.invalidateQueries({ queryKey: ["pt-sessions", memberId] });
-      
-      // 백엔드 처리 시간을 고려하여 잠시 대기
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      
-      // 세션 데이터를 다시 가져와서 최신 completedSessions 확인
-      const updatedSessionData = await ptSessionApi.getList(memberId);
-      const newCompletedSessions = updatedSessionData.completedSessions || 0;
-
-      // 중복 확인: 같은 날짜의 세션이 1개인지 확인
-      const sessionsForDate = updatedSessionData.sessions?.filter(
-        (session) => session.sessionDate.split("T")[0] === sessionDate
-      ) || [];
-
-      // 같은 날짜에 여러 세션이 있으면 가장 최근 것만 남기고 나머지 삭제
-      if (sessionsForDate.length > 1) {
-        console.log(`[PT Session] 중복 세션 발견 (${sessionsForDate.length}개):`, sessionDate);
-        
-        // 날짜와 생성 시간 기준으로 정렬 (가장 최근 것 우선)
-        sessionsForDate.sort((a, b) => {
-          const timeA = new Date(a.createdAt || a.sessionDate).getTime();
-          const timeB = new Date(b.createdAt || b.sessionDate).getTime();
-          if (timeB !== timeA) return timeB - timeA;
-          return b.id.localeCompare(a.id);
-        });
-
-        // 가장 최근 세션만 남기고 나머지 삭제
-        for (let i = 1; i < sessionsForDate.length; i++) {
-          try {
-            console.log(`[PT Session] 중복 세션 삭제:`, sessionsForDate[i].id);
-            await ptSessionApi.delete(memberId, sessionsForDate[i].id);
-          } catch (error) {
-            console.error("[PT Session] 중복 세션 삭제 실패:", error);
-          }
-        }
-
-        // 중복 삭제 후 세션 목록 다시 가져오기
-        const finalSessionData = await ptSessionApi.getList(memberId);
-        const finalCompletedSessions = finalSessionData.completedSessions || 0;
-
-        // PT 횟수 업데이트
-        if (ptCount) {
-          await ptCountApi.createOrUpdate(memberId, {
-            totalCount: ptCount.totalCount,
-            usedCount: finalCompletedSessions,
-            remainingCount: ptCount.totalCount - finalCompletedSessions,
-          });
-          queryClient.invalidateQueries({ queryKey: ["pt-count", memberId] });
-        }
-
-        // 세션 목록 다시 무효화하여 최신 데이터 반영
-        queryClient.invalidateQueries({ queryKey: ["pt-sessions", memberId] });
-      } else {
-        // 중복이 없으면 정상적으로 PT 횟수 업데이트
-        if (ptCount) {
-          const newTotalCount = ptCount.totalCount;
-          const newUsedCount = newCompletedSessions;
-          const newRemainingCount = newTotalCount - newUsedCount;
-          
-          try {
-            await ptCountApi.createOrUpdate(memberId, {
-              totalCount: newTotalCount,
-              usedCount: newUsedCount,
-              remainingCount: newRemainingCount,
-            });
-            queryClient.invalidateQueries({ queryKey: ["pt-count", memberId] });
-          } catch (error) {
-            console.error("PT 횟수 업데이트 실패:", error);
-          }
-        }
-      }
-
-      // PT 세션이 생성된 날짜를 운동 캘린더에도 표시하기 위해
-      // 해당 날짜에 PT 타입의 운동 기록을 자동으로 생성 (중복 방지)
-      try {
-        if (variables?.sessionDate) {
-          // 날짜 형식 확인 및 변환 (YYYY-MM-DD 형식으로 보장)
-          const sessionDate = variables.sessionDate.split("T")[0];
-          
-          // 중복 확인: 해당 날짜에 PT 타입 운동 기록이 이미 있는지 확인
-          const existingRecords = await workoutRecordApi.getList(
-            memberId,
-            1,
-            100,
-            sessionDate,
-            sessionDate
-          );
-
-          const ptRecords =
-            existingRecords.records?.filter(
-              (record) =>
-                record.workoutType === "PT" &&
-                record.workoutDate?.split("T")[0] === sessionDate
-            ) || [];
-
-          // PT 타입 운동 기록이 없으면 생성 (중복 방지)
-          if (ptRecords.length === 0) {
-            await workoutRecordApi.create(memberId, {
-              workoutDate: sessionDate,
-              workoutType: "PT",
-              exerciseName: variables.mainContent || "PT 수업",
-              bodyPart: "전신",
-              weight: 0,
-              reps: 1,
-              sets: 1,
-            });
-            
-            console.log("[PT Session] 운동 캘린더에 PT 기록 추가 완료:", sessionDate);
-          } else {
-            console.log("[PT Session] 이미 PT 운동 기록이 존재하여 생성하지 않음:", sessionDate);
-          }
-          
-          // 운동 캘린더 관련 쿼리 무효화 및 새로고침
-          queryClient.invalidateQueries({
-            queryKey: ["workout-calendar", memberId],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["workout-records", memberId],
-          });
-          
-          // 모든 캘린더 쿼리를 강제로 다시 가져오기
-          await queryClient.refetchQueries({
-            queryKey: ["workout-calendar", memberId],
-          });
-        }
-      } catch (error: any) {
-        console.error("[PT Session] 캘린더에 PT 기록 추가 실패:", error);
-        // 에러가 발생해도 세션 생성은 성공했으므로 계속 진행
-      }
-
-      setShowCreateModal(false);
-      reset();
-    },
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ sessionId, data }: { sessionId: string; data: UpdatePTSessionRequest }) =>
@@ -452,13 +287,6 @@ export default function MemberPTSessionProgress({
     },
   });
 
-  const handleCreateSubmit = (data: PTSessionFormData) => {
-    createMutation.mutate({
-      sessionDate: data.sessionDate,
-      mainContent: data.mainContent,
-      trainerComment: data.trainerComment || undefined,
-    });
-  };
 
   const handleEditSubmit = (data: PTSessionFormData) => {
     if (!editingSession) return;
@@ -482,7 +310,6 @@ export default function MemberPTSessionProgress({
   };
 
   const handleCloseModal = () => {
-    setShowCreateModal(false);
     setEditingSession(null);
     setShowDeleteConfirm(false);
     reset();
@@ -626,14 +453,6 @@ export default function MemberPTSessionProgress({
                   />
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowCreateModal(true)}
-                className="ml-4"
-              >
-                수업 추가
-              </Button>
             </div>
           </div>
 
@@ -684,96 +503,6 @@ export default function MemberPTSessionProgress({
           )}
         </div>
       </Card>
-
-      {/* PT 세션 생성 모달 */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151]">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              PT 세션 생성
-            </h3>
-            <form onSubmit={handleSubmit(handleCreateSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                  세션 날짜
-                </label>
-                <p className="text-sm text-[#c9c7c7] mb-3">
-                  {(() => {
-                    const dateValue = watch("sessionDate") || new Date().toISOString().split("T")[0];
-                    const [year, month, day] = dateValue.split("-").map(Number);
-                    const date = new Date(year, month - 1, day);
-                    return date.toLocaleDateString("ko-KR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    });
-                  })()}
-                </p>
-                <input
-                  type="date"
-                  {...register("sessionDate", {
-                    required: "세션 날짜를 선택해주세요",
-                  })}
-                  className="w-full px-3 py-2 bg-[#0f1115] border border-[#374151] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.sessionDate && (
-                  <p className="mt-1 text-sm text-red-400">
-                    {errors.sessionDate.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                  주요 수업 내용 <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...register("mainContent", {
-                    required: "주요 수업 내용을 입력해주세요",
-                  })}
-                  placeholder="오늘 진행한 운동 내용을 입력해주세요"
-                  className="w-full px-3 py-2 bg-[#0f1115] border border-[#374151] rounded-md text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.mainContent && (
-                  <p className="mt-1 text-sm text-red-400">
-                    {errors.mainContent.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                  트레이너 코멘트
-                </label>
-                <textarea
-                  {...register("trainerComment")}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-[#0f1115] border border-[#374151] rounded-md text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="추가 코멘트를 입력해주세요 (선택사항)"
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="flex-1"
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? "생성 중..." : "생성"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleCloseModal}
-                  disabled={createMutation.isPending}
-                >
-                  취소
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* PT 세션 수정 모달 */}
       {editingSession && (

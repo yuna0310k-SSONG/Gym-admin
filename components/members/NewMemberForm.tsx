@@ -197,6 +197,54 @@ export default function NewMemberForm({
         </div>
       </Card>
 
+      {/* 신체 정보 */}
+      <Card title="신체 정보" className="bg-[#0f1115]">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="키 (cm)"
+              type="number"
+              step="0.1"
+              placeholder="예: 175.5"
+              {...register("height", {
+                valueAsNumber: true,
+                min: { value: 50, message: "키는 50cm 이상이어야 합니다." },
+                max: { value: 250, message: "키는 250cm 이하여야 합니다." },
+              })}
+              error={errors.height?.message}
+            />
+            <Input
+              label="몸무게 (kg)"
+              type="number"
+              step="0.1"
+              placeholder="예: 70.5"
+              {...register("weight", {
+                valueAsNumber: true,
+                min: { value: 20, message: "몸무게는 20kg 이상이어야 합니다." },
+                max: { value: 300, message: "몸무게는 300kg 이하여야 합니다." },
+              })}
+              error={errors.weight?.message}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+              성별
+            </label>
+            <select
+              {...register("gender")}
+              className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">선택 안함</option>
+              <option value="MALE">남성</option>
+              <option value="FEMALE">여성</option>
+            </select>
+            {errors.gender && (
+              <p className="mt-1 text-sm text-red-400">{errors.gender.message}</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* 초기 평가 */}
       <Card title="초기 평가 (능력치)" className="bg-[#0f1115]">
         {!showAssessment ? (

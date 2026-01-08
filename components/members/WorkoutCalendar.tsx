@@ -20,6 +20,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [exerciseName, setExerciseName] = useState("");
   const [bodyPart, setBodyPart] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // 로컬 시간대 기준으로 YYYY-MM-DD 형식의 날짜 문자열 생성
@@ -28,6 +29,167 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  // 날짜 문자열에서 날짜 부분만 추출 (ISO 형식에서 YYYY-MM-DD)
+  const extractDateFromISO = (isoString: string): string => {
+    return isoString.split("T")[0];
+  };
+
+  // 날짜를 한국어 형식으로 포맷팅
+  const formatDateToKorean = (dateString: string): string => {
+    const [year, month, day] = dateString.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // PT 횟수 업데이트 헬퍼 함수
+  const updatePTCount = async (usedCount: number) => {
+    const ptCount = await ptCountApi.get(memberId);
+    if (ptCount) {
+      await ptCountApi.createOrUpdate(memberId, {
+        totalCount: ptCount.totalCount,
+        usedCount,
+        remainingCount: ptCount.totalCount - usedCount,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["pt-count", memberId],
+      });
+    }
+  };
+
+  // 중복 세션 제거 헬퍼 함수
+  const removeDuplicateSessions = async (sessionDate: string) => {
+    const updatedSessionData = await ptSessionApi.getList(memberId);
+    const sessionsForDate =
+      updatedSessionData.sessions?.filter(
+        (session) => extractDateFromISO(session.sessionDate) === sessionDate
+      ) || [];
+
+    if (sessionsForDate.length <= 1) {
+      return updatedSessionData.completedSessions || 0;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[WorkoutCalendar] 중복 세션 발견 (${sessionsForDate.length}개):`,
+        sessionDate
+      );
+    }
+
+    // 날짜와 생성 시간 기준으로 정렬 (가장 최근 것 우선)
+    sessionsForDate.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.sessionDate).getTime();
+      const timeB = new Date(b.createdAt || b.sessionDate).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return b.id.localeCompare(a.id);
+    });
+
+    // 가장 최근 세션만 남기고 나머지 삭제
+    for (let i = 1; i < sessionsForDate.length; i++) {
+      try {
+        await ptSessionApi.delete(memberId, sessionsForDate[i].id);
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[WorkoutCalendar] 중복 세션 삭제 실패:", error);
+        }
+      }
+    }
+
+    // 중복 삭제 후 세션 목록 다시 가져오기
+    const finalSessionData = await ptSessionApi.getList(memberId);
+    queryClient.invalidateQueries({
+      queryKey: ["pt-sessions", memberId],
+    });
+
+    return finalSessionData.completedSessions || 0;
+  };
+
+  // 캘린더 이벤트 업데이트 헬퍼 함수
+  const updateCalendarEvent = (
+    dateString: string,
+    ptDelta: number,
+    selfDelta: number
+  ) => {
+    const isInCurrentRange = dateString >= startDate && dateString <= endDate;
+    if (!isInCurrentRange) return;
+
+    queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
+      ["workout-calendar", memberId, startDate, endDate],
+      (old) => {
+        if (!old) {
+          if (ptDelta > 0 || selfDelta > 0) {
+            return {
+              events: [
+                {
+                  date: dateString,
+                  ptSessions: Math.max(0, ptDelta),
+                  selfWorkouts: Math.max(0, selfDelta),
+                },
+              ],
+              startDate,
+              endDate,
+            };
+          }
+          return old;
+        }
+
+        const existingIndex = old.events.findIndex((event) => {
+          const eventDate = extractDateFromISO(event.date);
+          return eventDate === dateString;
+        });
+
+        if (existingIndex >= 0) {
+          const existing = old.events[existingIndex];
+          const newPtSessions = Math.max(
+            0,
+            (existing.ptSessions || 0) + ptDelta
+          );
+          const newSelfWorkouts = Math.max(
+            0,
+            (existing.selfWorkouts || 0) + selfDelta
+          );
+
+          if (newPtSessions === 0 && newSelfWorkouts === 0) {
+            return {
+              ...old,
+              events: old.events.filter((_, i) => i !== existingIndex),
+            };
+          }
+
+          const newEvents = [...old.events];
+          newEvents[existingIndex] = {
+            ...existing,
+            ptSessions: newPtSessions,
+            selfWorkouts: newSelfWorkouts,
+          };
+          return {
+            ...old,
+            events: newEvents,
+          };
+        } else {
+          if (ptDelta > 0 || selfDelta > 0) {
+            return {
+              ...old,
+              events: [
+                ...old.events,
+                {
+                  date: dateString,
+                  ptSessions: Math.max(0, ptDelta),
+                  selfWorkouts: Math.max(0, selfDelta),
+                },
+              ],
+            };
+          }
+        }
+
+        return old;
+      }
+    );
   };
 
   const startDate = useMemo(() => {
@@ -79,8 +241,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       if (result?.records && selectedDate) {
         const filteredRecords = result.records.filter((record) => {
           if (!record.workoutDate) return false;
-          const recordDate = record.workoutDate.split("T")[0];
-          return recordDate === selectedDate;
+          return extractDateFromISO(record.workoutDate) === selectedDate;
         });
 
         return {
@@ -97,6 +258,16 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
     refetchInterval: false,
   });
 
+  // PT 횟수 조회 (남은 횟수 확인용)
+  const { data: ptCount } = useQuery({
+    queryKey: ["pt-count", memberId],
+    queryFn: () => ptCountApi.get(memberId),
+    enabled: !!memberId,
+  });
+
+  // 남은 횟수 계산 (PT 횟수가 등록되지 않은 경우 0으로 처리)
+  const remainingCount = ptCount ? ptCount.totalCount - ptCount.usedCount : 0;
+
   // 선택한 날짜의 PT 세션 조회
   const { data: selectedDatePTSessions, isLoading: ptSessionsLoading } =
     useQuery({
@@ -108,8 +279,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         if (result?.sessions && selectedDate) {
           const filteredSessions = result.sessions.filter((session) => {
             if (!session.sessionDate) return false;
-            const sessionDate = session.sessionDate.split("T")[0];
-            return sessionDate === selectedDate;
+            return extractDateFromISO(session.sessionDate) === selectedDate;
           });
 
           return {
@@ -151,8 +321,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       const dateString = formatDateToString(dateObj);
 
       const event = calendarData?.events?.find((e) => {
-        const eventDate = e.date.split("T")[0];
-        return eventDate === dateString;
+        return extractDateFromISO(e.date) === dateString;
       });
 
       days.push({
@@ -170,8 +339,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       const dateString = formatDateToString(dateObj);
 
       const event = calendarData?.events?.find((e) => {
-        const eventDate = e.date.split("T")[0];
-        return eventDate === dateString;
+        return extractDateFromISO(e.date) === dateString;
       });
 
       days.push({
@@ -190,8 +358,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       const dateString = formatDateToString(dateObj);
 
       const event = calendarData?.events?.find((e) => {
-        const eventDate = e.date.split("T")[0];
-        return eventDate === dateString;
+        return extractDateFromISO(e.date) === dateString;
       });
 
       days.push({
@@ -218,7 +385,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
     >();
 
     calendarData.events.forEach((event) => {
-      const eventDate = event.date.split("T")[0];
+      const eventDate = extractDateFromISO(event.date);
       if (eventDate >= startDate && eventDate <= endDate) {
         if (!dateMap.has(eventDate)) {
           dateMap.set(eventDate, {
@@ -250,36 +417,36 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       exerciseName: string;
       bodyPart: string;
     }) => {
-      // PT 타입인 경우, PT 세션만 생성 (중복 방지)
       if (data.workoutType === "PT") {
-        // 중복 방지를 위해 생성 전에 해당 날짜의 세션 확인
-        const sessionDate = data.date.split("T")[0];
+        // 남은 횟수 확인
+        const currentPTCount = await ptCountApi.get(memberId);
+        const remainingCount = currentPTCount
+          ? currentPTCount.totalCount - currentPTCount.usedCount
+          : 0;
 
-        // 해당 날짜에 이미 세션이 있는지 확인
+        if (remainingCount <= 0) {
+          throw new Error(
+            "PT 남은 횟수가 없습니다. 횟수를 추가한 후 다시 시도해주세요."
+          );
+        }
+
+        const sessionDate = extractDateFromISO(data.date);
         const existingSessions = await ptSessionApi.getList(memberId);
         const sessionsForDate =
           existingSessions.sessions?.filter(
-            (session) => session.sessionDate.split("T")[0] === sessionDate
+            (session) => extractDateFromISO(session.sessionDate) === sessionDate
           ) || [];
 
-        // 이미 해당 날짜에 세션이 있으면 생성하지 않고 기존 세션 반환
         if (sessionsForDate.length > 0) {
-          // 가장 최근 세션 반환
           const latestSession = sessionsForDate.sort((a, b) => {
-            const timeA = new Date(a.sessionDate).getTime();
-            const timeB = new Date(b.sessionDate).getTime();
-            return timeB - timeA || b.id.localeCompare(a.id);
+            const timeA = new Date(a.createdAt || a.sessionDate).getTime();
+            const timeB = new Date(b.createdAt || b.sessionDate).getTime();
+            if (timeB !== timeA) return timeB - timeA;
+            return b.id.localeCompare(a.id);
           })[0];
-
-          console.log(
-            "[WorkoutCalendar] 해당 날짜에 이미 PT 세션이 존재하여 생성하지 않음:",
-            sessionDate
-          );
           return { data: latestSession };
         }
 
-        // 해당 날짜에 세션이 없으면 새로 생성
-        console.log("[WorkoutCalendar] PT 세션 생성:", sessionDate);
         return ptSessionApi.create(memberId, {
           sessionDate: data.date,
           mainContent: data.exerciseName || "PT 수업",
@@ -298,168 +465,28 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         });
       }
     },
-    onSuccess: async (createdData, variables) => {
-      const date = variables.date;
+    onSuccess: async (_createdData, variables) => {
+      const sessionDate = extractDateFromISO(variables.date);
       const isPT = variables.workoutType === "PT";
-      const sessionDate = date.split("T")[0];
-
-      // 추가한 날짜가 현재 캘린더 범위 안에 있는지 확인
-      const isInCurrentRange =
-        sessionDate >= startDate && sessionDate <= endDate;
 
       if (isPT) {
-        // ========== 핵심 원칙: 단일 소스, 단일 업데이트 ==========
-        // PT 세션 생성은 이미 mutationFn에서 완료됨
-        // 최근 세션은 백엔드에서 자동으로 추가되므로, 여기서는 쿼리만 한 번 새로고침
-
-        // 백엔드 처리 시간을 고려하여 잠시 대기
         await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // 1. PT 세션 목록 새로고침 (최근 세션에 반영) - 단 한 번만 수행
         await queryClient.invalidateQueries({
           queryKey: ["pt-sessions", memberId],
         });
 
-        // 세션 목록을 직접 가져와서 중복 확인 및 PT 횟수 업데이트
-        const updatedSessionData = await ptSessionApi.getList(memberId);
-        const newCompletedSessions = updatedSessionData.completedSessions || 0;
+        const finalCompletedSessions = await removeDuplicateSessions(
+          sessionDate
+        );
+        await updatePTCount(finalCompletedSessions);
 
-        // 중복 확인: 같은 날짜의 세션이 1개인지 확인
-        const sessionsForDate =
-          updatedSessionData.sessions?.filter(
-            (session) => session.sessionDate.split("T")[0] === sessionDate
-          ) || [];
+        updateCalendarEvent(sessionDate, 1, 0);
 
-        // 같은 날짜에 여러 세션이 있으면 가장 최근 것만 남기고 나머지 삭제
-        if (sessionsForDate.length > 1) {
-          console.log(
-            `[WorkoutCalendar] 중복 세션 발견 (${sessionsForDate.length}개):`,
-            sessionDate
-          );
-
-          // 날짜와 생성 시간 기준으로 정렬 (가장 최근 것 우선)
-          sessionsForDate.sort((a, b) => {
-            const timeA = new Date(a.createdAt || a.sessionDate).getTime();
-            const timeB = new Date(b.createdAt || b.sessionDate).getTime();
-            if (timeB !== timeA) return timeB - timeA;
-            return b.id.localeCompare(a.id);
-          });
-
-          // 가장 최근 세션만 남기고 나머지 삭제
-          for (let i = 1; i < sessionsForDate.length; i++) {
-            try {
-              console.log(
-                `[WorkoutCalendar] 중복 세션 삭제:`,
-                sessionsForDate[i].id
-              );
-              await ptSessionApi.delete(memberId, sessionsForDate[i].id);
-            } catch (error) {
-              console.error("[WorkoutCalendar] 중복 세션 삭제 실패:", error);
-            }
-          }
-
-          // 중복 삭제 후 세션 목록 다시 가져오기
-          const finalSessionData = await ptSessionApi.getList(memberId);
-          const finalCompletedSessions =
-            finalSessionData.completedSessions || 0;
-
-          // PT 횟수 업데이트
-          const ptCount = await ptCountApi.get(memberId);
-          if (ptCount) {
-            await ptCountApi.createOrUpdate(memberId, {
-              totalCount: ptCount.totalCount,
-              usedCount: finalCompletedSessions,
-              remainingCount: ptCount.totalCount - finalCompletedSessions,
-            });
-            queryClient.invalidateQueries({
-              queryKey: ["pt-count", memberId],
-            });
-          }
-
-          // 세션 목록 다시 무효화하여 최신 데이터 반영
-          queryClient.invalidateQueries({
-            queryKey: ["pt-sessions", memberId],
-          });
-        } else {
-          // 중복이 없으면 정상적으로 PT 횟수 업데이트
-          const ptCount = await ptCountApi.get(memberId);
-          if (ptCount) {
-            await ptCountApi.createOrUpdate(memberId, {
-              totalCount: ptCount.totalCount,
-              usedCount: newCompletedSessions,
-              remainingCount: ptCount.totalCount - newCompletedSessions,
-            });
-            queryClient.invalidateQueries({
-              queryKey: ["pt-count", memberId],
-            });
-          }
-        }
-
-        // 2. PT 세션 목록 쿼리 새로고침 (단 한 번만) - invalidate 후 refetch
-        // 주의: refetchQueries는 invalidateQueries 후 자동으로 실행되므로,
-        // 여기서는 invalidate만 하고 MemberPTSessionProgress 컴포넌트가 자동으로 refetch하도록 함
-        // 따라서 추가 refetchQueries 호출은 하지 않음
-
-        // 3. 낙관적 업데이트: 캘린더 UI 업데이트 (덮어쓰기 방지)
-        if (isInCurrentRange) {
-          queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
-            ["workout-calendar", memberId, startDate, endDate],
-            (old) => {
-              if (!old) {
-                return {
-                  events: [
-                    {
-                      date: sessionDate,
-                      ptSessions: 1,
-                      selfWorkouts: 0,
-                    },
-                  ],
-                  startDate,
-                  endDate,
-                };
-              }
-
-              const existingIndex = old.events.findIndex((event) => {
-                const eventDate = event.date.split("T")[0];
-                return eventDate === sessionDate;
-              });
-
-              let newEvents = [...old.events];
-
-              if (existingIndex >= 0) {
-                // 기존 이벤트가 있으면 덮어쓰지 않고 누적
-                const existing = newEvents[existingIndex];
-                newEvents[existingIndex] = {
-                  ...existing,
-                  ptSessions: (existing.ptSessions || 0) + 1,
-                  selfWorkouts: existing.selfWorkouts || 0, // 개인운동은 유지
-                };
-              } else {
-                // 새 이벤트 추가
-                newEvents.push({
-                  date: sessionDate,
-                  ptSessions: 1,
-                  selfWorkouts: 0,
-                });
-              }
-
-              return {
-                ...old,
-                events: newEvents,
-              };
-            }
-          );
-        }
-
-        // 5. 모달 열기 및 최종 동기화
         setSelectedDate(sessionDate);
         setShowSessionTypeModal(false);
         setShowRecordModal(true);
 
-        // 최종 동기화: 캘린더와 운동 기록만 새로고침
-        // 주의: PT 세션은 이미 invalidateQueries로 처리되었으므로
-        // MemberPTSessionProgress 컴포넌트가 자동으로 refetch함
-        // 여기서는 추가로 refetchQueries를 호출하지 않음
         setTimeout(async () => {
           await Promise.all([
             queryClient.refetchQueries({
@@ -471,64 +498,13 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
           ]);
         }, 200);
       } else {
-        // 개인 운동인 경우 낙관적 업데이트 (PT 세션 유지)
-        const personalDate = date.split("T")[0];
-        if (isInCurrentRange) {
-          queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
-            ["workout-calendar", memberId, startDate, endDate],
-            (old) => {
-              if (!old) {
-                return {
-                  events: [
-                    {
-                      date: personalDate,
-                      ptSessions: 0,
-                      selfWorkouts: 1,
-                    },
-                  ],
-                  startDate,
-                  endDate,
-                };
-              }
+        const personalDate = sessionDate;
+        updateCalendarEvent(personalDate, 0, 1);
 
-              const existingIndex = old.events.findIndex((event) => {
-                const eventDate = event.date.split("T")[0];
-                return eventDate === personalDate;
-              });
-
-              let newEvents = [...old.events];
-
-              if (existingIndex >= 0) {
-                // 기존 이벤트가 있으면 덮어쓰지 않고 누적
-                const existing = newEvents[existingIndex];
-                newEvents[existingIndex] = {
-                  ...existing,
-                  ptSessions: existing.ptSessions || 0, // PT 세션은 유지
-                  selfWorkouts: (existing.selfWorkouts || 0) + 1,
-                };
-              } else {
-                // 새 이벤트 추가
-                newEvents.push({
-                  date: personalDate,
-                  ptSessions: 0,
-                  selfWorkouts: 1,
-                });
-              }
-
-              return {
-                ...old,
-                events: newEvents,
-              };
-            }
-          );
-        }
-
-        // 방금 추가한 날짜를 선택 상태로 유지하고, 해당 날짜의 운동 기록 모달을 열기
         setSelectedDate(personalDate);
         setShowSessionTypeModal(false);
         setShowRecordModal(true);
 
-        // 해당 날짜의 운동 기록 목록 쿼리 새로고침
         queryClient.invalidateQueries({
           queryKey: ["workout-records", memberId, personalDate],
         });
@@ -540,24 +516,31 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       setExerciseName("");
       setBodyPart("");
     },
+    onError: (error: Error) => {
+      console.error("운동 기록 생성 실패:", error);
+      setErrorMessage(error.message || "운동 기록 추가에 실패했습니다.");
+      setShowSessionTypeModal(false);
+      // 에러 메시지를 3초 후 자동으로 제거
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 3000);
+    },
   });
 
   // 운동 기록 삭제 mutation (양방향 동기화)
   const deleteWorkoutMutation = useMutation({
     mutationFn: (recordId: string) =>
       workoutRecordApi.delete(memberId, recordId),
-    onSuccess: async (_data, recordId) => {
-      // 삭제된 기록의 정보 찾기
+    onSuccess: async (_data: unknown, recordId: string) => {
       const deletedRecord = selectedDateRecords?.records?.find(
         (r) => r.id === recordId
       );
       const deletedDate = deletedRecord?.workoutDate
-        ? deletedRecord.workoutDate.split("T")[0]
+        ? extractDateFromISO(deletedRecord.workoutDate)
         : selectedDate;
       const wasPT = deletedRecord?.workoutType === "PT";
 
       if (!deletedDate) {
-        // 날짜를 찾을 수 없으면 기본 동기화만 수행
         queryClient.invalidateQueries({
           queryKey: ["workout-calendar", memberId],
         });
@@ -567,21 +550,15 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         return;
       }
 
-      // ========== 양방향 삭제 동기화 ==========
-      // PT 타입 운동 기록 삭제 시 해당 날짜의 PT 세션도 삭제 (최근 세션에서도 제거)
       if (wasPT) {
         try {
           const ptSessionsData = await ptSessionApi.getList(memberId);
           const sessionToDelete = ptSessionsData.sessions?.find((session) => {
-            const sessionDate = session.sessionDate.split("T")[0];
-            return sessionDate === deletedDate;
+            return extractDateFromISO(session.sessionDate) === deletedDate;
           });
 
           if (sessionToDelete) {
-            // PT 세션 삭제 (최근 세션에서도 제거됨)
             await ptSessionApi.delete(memberId, sessionToDelete.id);
-
-            // PT 세션 목록 새로고침 (최근 세션 동기화)
             await queryClient.invalidateQueries({
               queryKey: ["pt-sessions", memberId],
             });
@@ -589,81 +566,20 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
               queryKey: ["pt-sessions", memberId],
             });
 
-            // PT 횟수 업데이트
             const updatedSessionData = await ptSessionApi.getList(memberId);
             const newCompletedSessions =
               updatedSessionData.completedSessions || 0;
-
-            const ptCount = await ptCountApi.get(memberId);
-            if (ptCount) {
-              await ptCountApi.createOrUpdate(memberId, {
-                totalCount: ptCount.totalCount,
-                usedCount: newCompletedSessions,
-                remainingCount: ptCount.totalCount - newCompletedSessions,
-              });
-              queryClient.invalidateQueries({
-                queryKey: ["pt-count", memberId],
-              });
-            }
+            await updatePTCount(newCompletedSessions);
           }
         } catch (error) {
-          console.error("[WorkoutCalendar] PT 세션 삭제 실패:", error);
+          if (process.env.NODE_ENV === "development") {
+            console.error("[WorkoutCalendar] PT 세션 삭제 실패:", error);
+          }
         }
       }
 
-      // 캘린더 낙관적 업데이트 (UI 즉시 반영)
-      const isInCurrentRange =
-        deletedDate >= startDate && deletedDate <= endDate;
+      updateCalendarEvent(deletedDate, wasPT ? -1 : 0, wasPT ? 0 : -1);
 
-      if (isInCurrentRange) {
-        queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
-          ["workout-calendar", memberId, startDate, endDate],
-          (old) => {
-            if (!old) return old;
-
-            const existingIndex = old.events.findIndex((event) => {
-              const eventDate = event.date.split("T")[0];
-              return eventDate === deletedDate;
-            });
-
-            if (existingIndex >= 0) {
-              const existing = old.events[existingIndex];
-              const newPtSessions = Math.max(
-                0,
-                existing.ptSessions - (wasPT ? 1 : 0)
-              );
-              const newSelfWorkouts = Math.max(
-                0,
-                existing.selfWorkouts - (wasPT ? 0 : 1)
-              );
-
-              if (newPtSessions === 0 && newSelfWorkouts === 0) {
-                // 모든 기록이 삭제되면 이벤트 제거
-                return {
-                  ...old,
-                  events: old.events.filter((_, i) => i !== existingIndex),
-                };
-              } else {
-                // 일부 기록만 삭제되면 카운트 감소
-                const newEvents = [...old.events];
-                newEvents[existingIndex] = {
-                  ...existing,
-                  ptSessions: newPtSessions,
-                  selfWorkouts: newSelfWorkouts,
-                };
-                return {
-                  ...old,
-                  events: newEvents,
-                };
-              }
-            }
-
-            return old;
-          }
-        );
-      }
-
-      // 서버 데이터와 동기화
       await Promise.all([
         queryClient.refetchQueries({
           queryKey: ["workout-calendar", memberId, startDate, endDate],
@@ -673,7 +589,6 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         }),
       ]);
 
-      // 모든 기록이 삭제되면 모달 닫기
       const remainingRecords = selectedDateRecords?.records?.filter(
         (r) => r.id !== recordId
       );
@@ -688,16 +603,14 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
   const deletePTSessionMutation = useMutation({
     mutationFn: (sessionId: string) => ptSessionApi.delete(memberId, sessionId),
     onSuccess: async (_data, sessionId) => {
-      // 삭제될 세션의 날짜 찾기
       const sessionToDelete = selectedDatePTSessions?.sessions?.find(
         (s) => s.id === sessionId
       );
       const sessionDate = sessionToDelete?.sessionDate
-        ? sessionToDelete.sessionDate.split("T")[0]
+        ? extractDateFromISO(sessionToDelete.sessionDate)
         : selectedDate;
 
       if (!sessionDate) {
-        // 날짜를 찾을 수 없으면 기본 동기화만 수행
         queryClient.invalidateQueries({
           queryKey: ["pt-sessions", memberId],
         });
@@ -707,8 +620,6 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         return;
       }
 
-      // ========== 양방향 삭제 동기화 ==========
-      // PT 세션 삭제 시 해당 날짜의 PT 타입 운동 기록도 삭제
       try {
         const workoutRecords = await workoutRecordApi.getList(
           memberId,
@@ -718,21 +629,22 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
           sessionDate
         );
 
-        // 해당 날짜의 PT 타입 운동 기록 찾아서 삭제
         const ptRecordToDelete = workoutRecords.records?.find(
           (record) =>
             record.workoutType === "PT" &&
-            record.workoutDate?.split("T")[0] === sessionDate
+            record.workoutDate &&
+            extractDateFromISO(record.workoutDate) === sessionDate
         );
 
         if (ptRecordToDelete) {
           await workoutRecordApi.delete(memberId, ptRecordToDelete.id);
         }
       } catch (error) {
-        console.error("[WorkoutCalendar] PT 운동 기록 삭제 실패:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[WorkoutCalendar] PT 운동 기록 삭제 실패:", error);
+        }
       }
 
-      // PT 세션 목록 새로고침 (최근 세션 동기화)
       await queryClient.invalidateQueries({
         queryKey: ["pt-sessions", memberId],
       });
@@ -740,65 +652,12 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         queryKey: ["pt-sessions", memberId],
       });
 
-      // PT 횟수 업데이트
-      const ptCount = await ptCountApi.get(memberId);
-      if (ptCount) {
-        const updatedSessionData = await ptSessionApi.getList(memberId);
-        const newCompletedSessions = updatedSessionData.completedSessions || 0;
+      const updatedSessionData = await ptSessionApi.getList(memberId);
+      const newCompletedSessions = updatedSessionData.completedSessions || 0;
+      await updatePTCount(newCompletedSessions);
 
-        await ptCountApi.createOrUpdate(memberId, {
-          totalCount: ptCount.totalCount,
-          usedCount: newCompletedSessions,
-          remainingCount: ptCount.totalCount - newCompletedSessions,
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["pt-count", memberId],
-        });
-      }
+      updateCalendarEvent(sessionDate, -1, 0);
 
-      // 캘린더 낙관적 업데이트 (UI 즉시 반영)
-      const isInCurrentRange =
-        sessionDate >= startDate && sessionDate <= endDate;
-
-      if (isInCurrentRange) {
-        queryClient.setQueryData<WorkoutCalendarResponse | undefined>(
-          ["workout-calendar", memberId, startDate, endDate],
-          (old) => {
-            if (!old) return old;
-
-            const existingIndex = old.events.findIndex((event) => {
-              const eventDate = event.date.split("T")[0];
-              return eventDate === sessionDate;
-            });
-
-            if (existingIndex === -1) return old;
-
-            const existing = old.events[existingIndex];
-            const newPtSessions = Math.max(0, existing.ptSessions - 1);
-
-            if (newPtSessions === 0 && existing.selfWorkouts === 0) {
-              // 모든 기록이 삭제되면 이벤트 제거
-              return {
-                ...old,
-                events: old.events.filter((_, i) => i !== existingIndex),
-              };
-            } else {
-              // PT 기록만 삭제되면 카운트 감소
-              const newEvents = [...old.events];
-              newEvents[existingIndex] = {
-                ...existing,
-                ptSessions: newPtSessions,
-              };
-              return {
-                ...old,
-                events: newEvents,
-              };
-            }
-          }
-        );
-      }
-
-      // 서버 데이터와 동기화
       await Promise.all([
         queryClient.refetchQueries({
           queryKey: ["workout-calendar", memberId, startDate, endDate],
@@ -808,7 +667,6 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         }),
       ]);
 
-      // 모든 기록이 삭제되면 모달 닫기
       const remainingSessions = selectedDatePTSessions?.sessions?.filter(
         (s) => s.id !== sessionId
       );
@@ -843,15 +701,12 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
     setExerciseName("");
     setBodyPart("");
 
-    // 해당 날짜에 운동 기록이 있는지 확인
     const event = calendarData?.events?.find((e) => {
-      const eventDate = e.date.split("T")[0];
-      return eventDate === dateString;
+      return extractDateFromISO(e.date) === dateString;
     });
     const hasRecordsInCalendar =
       (event?.ptSessions ?? 0) > 0 || (event?.selfWorkouts ?? 0) > 0;
 
-    // 실제 API에서도 확인
     try {
       const records = await workoutRecordApi.getList(
         memberId,
@@ -864,25 +719,24 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       const filteredRecords =
         records?.records?.filter((record) => {
           if (!record.workoutDate) return false;
-          const recordDate = record.workoutDate.split("T")[0];
-          return recordDate === dateString;
+          return extractDateFromISO(record.workoutDate) === dateString;
         }) || [];
 
       const hasRecords = filteredRecords.length > 0;
 
-      // PT 세션도 확인
       let hasPTSessions = false;
       try {
         const ptSessionsData = await ptSessionApi.getList(memberId);
         const ptSessionsForDate =
           ptSessionsData.sessions?.filter((session) => {
             if (!session.sessionDate) return false;
-            const sessionDate = session.sessionDate.split("T")[0];
-            return sessionDate === dateString;
+            return extractDateFromISO(session.sessionDate) === dateString;
           }) || [];
         hasPTSessions = ptSessionsForDate.length > 0;
       } catch (error) {
-        console.error("PT 세션 조회 실패:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("PT 세션 조회 실패:", error);
+        }
       }
 
       if (hasRecords || hasRecordsInCalendar || hasPTSessions) {
@@ -891,7 +745,9 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
         setShowSessionTypeModal(true);
       }
     } catch (error) {
-      console.error("운동 기록 조회 실패:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("운동 기록 조회 실패:", error);
+      }
       setShowSessionTypeModal(true);
     }
   };
@@ -949,6 +805,48 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
   return (
     <>
       <Card title="운동 캘린더" className="bg-[#0f1115]">
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-start">
+              <svg
+                className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="flex-1">
+                <p className="text-red-400 font-medium">오류</p>
+                <p className="text-red-300 text-sm mt-1">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-red-400 hover:text-red-300 ml-2"
+                aria-label="에러 메시지 닫기"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
         {/* 월 네비게이션 */}
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -1077,18 +975,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
               운동 타입 선택
             </h3>
             <p className="text-sm text-[#c9c7c7] mb-4">
-              {selectedDate &&
-                (() => {
-                  const [year, month, day] = selectedDate
-                    .split("-")
-                    .map(Number);
-                  const date = new Date(year, month - 1, day);
-                  return date.toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  });
-                })()}
+              {selectedDate && formatDateToKorean(selectedDate)}
             </p>
 
             <div className="space-y-4 mb-4">
@@ -1122,10 +1009,20 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
               <Button
                 variant="primary"
                 onClick={() => handleWorkoutTypeSelect("PT")}
-                disabled={createWorkoutMutation.isPending}
+                disabled={
+                  createWorkoutMutation.isPending || remainingCount <= 0
+                }
                 className="flex-1"
+                title={
+                  remainingCount <= 0
+                    ? "PT 남은 횟수가 없습니다. 횟수를 추가한 후 다시 시도해주세요."
+                    : undefined
+                }
               >
                 PT 세션
+                {remainingCount <= 0 && (
+                  <span className="ml-1 text-xs">(횟수 부족)</span>
+                )}
               </Button>
               <Button
                 variant="outline"
@@ -1158,18 +1055,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
           <div className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-[#374151] max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-white mb-4">운동 기록</h3>
             <p className="text-sm text-[#c9c7c7] mb-4">
-              {selectedDate &&
-                (() => {
-                  const [year, month, day] = selectedDate
-                    .split("-")
-                    .map(Number);
-                  const date = new Date(year, month - 1, day);
-                  return date.toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  });
-                })()}
+              {selectedDate && formatDateToKorean(selectedDate)}
             </p>
 
             {recordsLoading || ptSessionsLoading ? (
@@ -1216,13 +1102,8 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
                             <p>트레이너 코멘트: {session.trainerComment}</p>
                           )}
                           <p className="text-xs text-[#6b7280]">
-                            {new Date(session.sessionDate).toLocaleDateString(
-                              "ko-KR",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
+                            {formatDateToKorean(
+                              extractDateFromISO(session.sessionDate)
                             )}
                           </p>
                         </div>
@@ -1303,19 +1184,8 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
             ) : (
               <div className="text-center py-8">
                 <p className="text-[#c9c7c7] mb-4">
-                  {selectedDate &&
-                    (() => {
-                      const [year, month, day] = selectedDate
-                        .split("-")
-                        .map(Number);
-                      const date = new Date(year, month - 1, day);
-                      return date.toLocaleDateString("ko-KR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      });
-                    })()}{" "}
-                  운동 기록이 없습니다.
+                  {selectedDate && formatDateToKorean(selectedDate)} 운동 기록이
+                  없습니다.
                 </p>
                 <Button
                   variant="primary"

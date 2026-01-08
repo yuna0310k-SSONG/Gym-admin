@@ -42,6 +42,26 @@ export default function MemberProfile({ member }: MemberProfileProps) {
               {new Date(member.joinDate).toLocaleDateString("ko-KR")}
             </p>
           </div>
+          {member.height && (
+            <div>
+              <label className="text-sm font-medium text-[#9ca3af]">키</label>
+              <p className="mt-1 text-[#e5e7eb]">{member.height} cm</p>
+            </div>
+          )}
+          {member.weight && (
+            <div>
+              <label className="text-sm font-medium text-[#9ca3af]">몸무게</label>
+              <p className="mt-1 text-[#e5e7eb]">{member.weight} kg</p>
+            </div>
+          )}
+          {member.gender && (
+            <div>
+              <label className="text-sm font-medium text-[#9ca3af]">성별</label>
+              <p className="mt-1 text-[#e5e7eb]">
+                {member.gender === "MALE" ? "남성" : "여성"}
+              </p>
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium text-[#9ca3af]">등록일</label>
             <p className="mt-1 text-[#e5e7eb]">

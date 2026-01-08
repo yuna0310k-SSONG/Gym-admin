@@ -5,6 +5,9 @@ export interface CreateMemberRequest {
   phone: string;
   joinDate: string;
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  height?: number; // 키 (cm)
+  weight?: number; // 몸무게 (kg)
+  gender?: "MALE" | "FEMALE"; // 성별
 }
 
 export interface UpdateMemberRequest {
@@ -12,6 +15,9 @@ export interface UpdateMemberRequest {
   email?: string;
   phone?: string;
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  height?: number; // 키 (cm)
+  weight?: number; // 몸무게 (kg)
+  gender?: "MALE" | "FEMALE"; // 성별
 }
 
 // 로그인 요청

@@ -24,6 +24,9 @@ export interface Member {
   phone: string;
   joinDate: string;
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  height?: number; // 키 (cm)
+  weight?: number; // 몸무게 (kg)
+  gender?: "MALE" | "FEMALE"; // 성별
   createdAt: string;
   updatedAt: string;
 }
@@ -159,7 +162,13 @@ export interface InjuryResponse extends Injury {}
 export interface InjuryRestriction {
   id: string;
   injuryId: string;
-  restrictedCategory: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
+  restrictedCategory:
+    | "STRENGTH"
+    | "CARDIO"
+    | "ENDURANCE"
+    | "FLEXIBILITY"
+    | "BODY"
+    | "STABILITY";
   createdAt: string;
 }
 
@@ -216,7 +225,13 @@ export interface MemberComparisonResponse {
 export interface AssessmentItem {
   id: string;
   assessmentId: string;
-  category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
+  category:
+    | "STRENGTH"
+    | "CARDIO"
+    | "ENDURANCE"
+    | "FLEXIBILITY"
+    | "BODY"
+    | "STABILITY";
   name: string;
   value: number;
   unit: string;
@@ -369,4 +384,3 @@ export interface WorkoutRoutineListResponse {
   routines: WorkoutRoutine[];
   total: number;
 }
-
