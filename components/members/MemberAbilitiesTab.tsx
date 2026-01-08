@@ -45,6 +45,7 @@ export default function MemberAbilitiesTab({
     enabled: !!memberId,
     // compareData가 null일 수 있으므로 에러로 처리하지 않음
     retry: false,
+    throwOnError: false, // 404 에러는 정상적인 경우이므로 에러로 처리하지 않음
   });
 
   const { data: historyData, isLoading: historyLoading } = useQuery({

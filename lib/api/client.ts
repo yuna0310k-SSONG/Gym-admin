@@ -76,7 +76,7 @@ export const apiClient = {
           "요청한 API 엔드포인트를 찾을 수 없습니다. 백엔드 API가 아직 구현되지 않았을 수 있습니다.";
         
         // 일부 엔드포인트는 404가 정상적인 경우임 (예: hexagon, compare, goals)
-        // 이런 경우는 조용히 처리 (warn만 표시)
+        // 이런 경우는 조용히 처리하고 null 반환 (에러 throw 하지 않음)
         const isOptionalEndpoint =
           endpoint.includes("/abilities/hexagon") ||
           endpoint.includes("/abilities/compare") ||
@@ -86,18 +86,20 @@ export const apiClient = {
           // 개발 환경에서만 경고 표시
           if (process.env.NODE_ENV === "development") {
             console.warn(
-              `[API Client] Optional endpoint not found (404): ${endpoint}`
+              `[API Client] Optional endpoint not found (404): ${endpoint} - returning null`
             );
           }
+          // 선택적 엔드포인트의 경우 에러를 throw하지 않고 null 반환
+          return null as T;
         } else {
-          // 필수 엔드포인트의 경우만 에러 로그
+          // 필수 엔드포인트의 경우만 에러 로그 및 throw
           console.error("404 Not Found Error:", {
             endpoint,
             status: response.status,
             errorData,
           });
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
       }
 
       throw new Error(

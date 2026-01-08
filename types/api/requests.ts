@@ -101,7 +101,7 @@ export interface UpdateMemberGoalRequest {
 // PT 세션 관련 요청
 export interface CreatePTSessionRequest {
   sessionDate: string;
-  mainContent: string; // 필수 필드
+  mainContent?: string;
   trainerComment?: string;
 }
 

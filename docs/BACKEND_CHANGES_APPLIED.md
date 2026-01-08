@@ -145,3 +145,4 @@ export interface WorkoutRecordListResponse {
 **작성일**: 2024-01-06  
 **상태**: 백엔드 변경사항 반영 완료 ✅
 
+

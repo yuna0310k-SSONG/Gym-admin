@@ -22,3 +22,4 @@ export function formatPhoneNumberKR(value: string): string {
   // fallback: if already has formatting, keep it; otherwise show digits
   return value?.trim() ? value : digits;
 }
+
