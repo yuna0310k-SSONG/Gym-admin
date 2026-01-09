@@ -107,7 +107,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
-            ADMIN PLATFORM
+            HEALTH PLATFORM
           </p>
           <h2 className="text-2xl sm:text-3xl font-medium tracking-tight">회원가입</h2>
         </div>
