@@ -12,13 +12,28 @@
 
 ## 🛠 기술 스택
 
-- **Next.js** 14.x (App Router)
-- **TypeScript** 5.x
-- **Tailwind CSS** 3.x
-- **Recharts** 2.x (차트 시각화)
-- **React Query** 5.x (서버 상태 관리)
-- **React Hook Form** 7.x (폼 관리)
-- **Zod** 3.x (스키마 검증)
+### 핵심 프레임워크
+
+- **Next.js** 14.2.0 (App Router)
+- **React** 18.2.0
+- **TypeScript** 5.3.0
+
+### 스타일링
+
+- **Tailwind CSS** 3.4.1
+- **PostCSS** 8.4.33
+
+### 상태 관리 & 데이터 페칭
+
+- **React Query** (@tanstack/react-query) 5.0.0
+- **React Hook Form** 7.49.0
+- **Zod** 3.22.0 (스키마 검증)
+
+### 차트 & 시각화
+
+- **Recharts** 2.10.0
+- **Chart.js** 4.5.1
+- **react-chartjs-2** 5.3.1
 
 ## 🚀 시작하기
 
@@ -30,7 +45,7 @@
 ### 설치 및 실행
 
 ```bash
-# 의존성 설치 (이미 완료됨)
+# 의존성 설치
 npm install
 
 # 개발 서버 실행
@@ -41,6 +56,9 @@ npm run build
 
 # 프로덕션 서버 실행
 npm start
+
+# 린트 실행
+npm run lint
 ```
 
 개발 서버는 [http://localhost:3000](http://localhost:3000)에서 실행됩니다.
@@ -49,31 +67,52 @@ npm start
 
 ```
 gym-front/
-├── app/                    # Next.js App Router
-│   ├── layout.tsx         # 루트 레이아웃
-│   ├── page.tsx          # 홈 페이지
-│   └── globals.css        # 전역 스타일
-├── components/            # React 컴포넌트
-├── lib/                   # 유틸리티 및 설정
-│   ├── api/              # API 클라이언트
-│   ├── hooks/            # 커스텀 훅
-│   └── utils/            # 유틸리티 함수
-├── types/                 # TypeScript 타입 정의
-├── docs/                  # 문서
-│   ├── BUSINESS_OVERVIEW.md
-│   └── CHART_VISUALIZATION_EXAMPLES.md
-├── PROJECT_PLAN.md       # 프로젝트 계획서
+├── app/                          # Next.js App Router
+│   ├── (auth)/                  # 인증 관련 페이지
+│   │   ├── login/
+│   │   └── register/
+│   ├── dashboard/               # 대시보드 페이지
+│   │   ├── members/            # 회원 관리
+│   │   ├── insights/           # 인사이트
+│   │   ├── trainers/           # 트레이너 관리
+│   │   ├── approval-pending/   # 승인 대기
+│   │   └── rejected/           # 거부된 회원
+│   ├── layout.tsx              # 루트 레이아웃
+│   └── page.tsx                # 홈 페이지
+├── components/                  # React 컴포넌트
+│   ├── auth/                   # 인증 컴포넌트
+│   ├── dashboard/              # 대시보드 컴포넌트
+│   ├── members/                # 회원 관련 컴포넌트
+│   ├── health/                 # 건강/능력 관련 컴포넌트
+│   ├── layout/                 # 레이아웃 컴포넌트
+│   └── ui/                     # 공통 UI 컴포넌트
+├── lib/                         # 유틸리티 및 설정
+│   ├── api/                    # API 클라이언트
+│   │   ├── client.ts           # API 클라이언트 설정
+│   │   ├── auth.ts             # 인증 API
+│   │   ├── members.ts          # 회원 API
+│   │   ├── assessments.ts      # 평가 API
+│   │   └── ...                 # 기타 API
+│   ├── hooks/                  # 커스텀 훅
+│   └── utils/                  # 유틸리티 함수
+├── types/                       # TypeScript 타입 정의
+│   ├── api/                    # API 타입
+│   └── domain/                 # 도메인 타입
+├── providers/                   # React Context Providers
+│   ├── QueryProvider.tsx       # React Query Provider
+│   └── ToastProvider.tsx       # Toast Provider
+├── styles/                      # 스타일 파일
+│   └── globals.css             # 전역 스타일
+├── docs/                        # 문서
+│   ├── IMPLEMENTED_APIS.md     # 구현된 API 문서
+│   ├── BACKEND_API_REQUESTS.md # 백엔드 API 요청 문서
+│   └── VERCEL_DEPLOYMENT.md    # 배포 문서
+├── PROJECT_PLAN.md             # 프로젝트 계획서
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.ts
 └── next.config.js
 ```
-
-## 📚 관련 문서
-
-- [프로젝트 계획서](./PROJECT_PLAN.md)
-- [비즈니스 개요](./docs/BUSINESS_OVERVIEW.md)
-- [차트 시각화 예시](./docs/CHART_VISUALIZATION_EXAMPLES.md)
 
 ## 🔧 환경 변수 설정
 
@@ -88,11 +127,43 @@ NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
 ```
 
-## 📝 다음 단계
+## 📚 관련 문서
 
-1. 환경 변수 설정 (`.env.local` 파일 생성)
-2. API 클라이언트 설정 (`lib/api/client.ts`)
-3. 컴포넌트 및 페이지 구현
-4. 백엔드 API와 연동
+- [프로젝트 계획서](./PROJECT_PLAN.md)
+- [구현된 API 문서](./docs/IMPLEMENTED_APIS.md)
+- [백엔드 API 요청 문서](./docs/BACKEND_API_REQUESTS.md)
+- [Vercel 배포 문서](./docs/VERCEL_DEPLOYMENT.md)
+
+## 🎯 주요 기능
+
+- 회원 관리 (CRUD)
+- 회원 능력 평가 및 시각화
+- 대시보드 통계 및 인사이트
+- 트레이너 관리
+- 회원 승인/거부 관리
+- 운동 기록 및 루틴 관리
+- PT 세션 관리
+
+## 📝 개발 가이드
+
+### API 클라이언트 사용
+
+모든 API 호출은 `lib/api/` 디렉토리의 클라이언트를 통해 수행됩니다.
+
+```typescript
+import { getMembers } from "@/lib/api/members";
+
+const members = await getMembers();
+```
+
+### 컴포넌트 구조
+
+- `components/ui/`: 재사용 가능한 UI 컴포넌트
+- `components/dashboard/`: 대시보드 전용 컴포넌트
+- `components/members/`: 회원 관련 컴포넌트
+
+### 스타일링
+
+Tailwind CSS를 사용하며, 커스텀 스타일은 `styles/globals.css`에 정의합니다.
 
 자세한 내용은 [PROJECT_PLAN.md](./PROJECT_PLAN.md)를 참고하세요.
