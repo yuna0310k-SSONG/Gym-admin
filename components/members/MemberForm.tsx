@@ -30,6 +30,9 @@ export default function MemberForm({
           email: member.email,
           phone: formatPhoneNumberKR(member.phone), // 기존 값도 하이픈 형식으로 표시
           joinDate: member.joinDate.split("T")[0],
+          birthDate: member.birthDate
+            ? member.birthDate.split("T")[0]
+            : undefined,
           height: member.height,
           weight: member.weight,
           gender: member.gender,
@@ -109,12 +112,20 @@ export default function MemberForm({
             </div>
           );
         })()}
-        <Input
-          label="가입일"
-          type="date"
-          {...register("joinDate", { required: "가입일을 선택해주세요" })}
-          error={errors.joinDate?.message}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="생년월일"
+            type="date"
+            {...register("birthDate")}
+            error={errors.birthDate?.message}
+          />
+          <Input
+            label="가입일"
+            type="date"
+            {...register("joinDate", { required: "가입일을 선택해주세요" })}
+            error={errors.joinDate?.message}
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="키 (cm)"

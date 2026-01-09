@@ -4,6 +4,7 @@ export interface CreateMemberRequest {
   email: string;
   phone: string;
   joinDate: string;
+  birthDate?: string; // 생년월일 (YYYY-MM-DD 형식)
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   height?: number; // 키 (cm)
   weight?: number; // 몸무게 (kg)
@@ -14,6 +15,7 @@ export interface UpdateMemberRequest {
   name?: string;
   email?: string;
   phone?: string;
+  birthDate?: string; // 생년월일 (YYYY-MM-DD 형식)
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   height?: number; // 키 (cm)
   weight?: number; // 몸무게 (kg)
@@ -66,7 +68,7 @@ export interface CreateInjuryRestrictionRequest {
 
 // 평가 관련 요청
 export interface CreateAssessmentRequest {
-  assessmentType: "INITIAL" | "PERIODIC" | "FLEXIBILITY";
+  assessmentType: "INITIAL" | "PERIODIC";
   assessedAt: string;
   trainerComment?: string;
   bodyWeight?: number;
@@ -77,8 +79,53 @@ export interface CreateAssessmentRequest {
 export interface CreateAssessmentItemRequest {
   category: "STRENGTH" | "CARDIO" | "ENDURANCE" | "FLEXIBILITY" | "BODY" | "STABILITY";
   name: string;
-  value: number;
-  unit: string;
+  value?: number;
+  unit?: string;
+  details?: {
+    // 등급 정보
+    grade?: string; // 'A', 'B', 'C', 'D', 'D-1', 'D-2' 등
+    internalScore?: number; // 내부 점수 (0-100, UI 비노출)
+    
+    // 대체 항목 정보
+    isReplacement?: boolean;
+    isImpossible?: boolean;
+    weight?: number; // 항목별 비중
+    alternative?: string; // 대체 항목 정보
+    
+    // 심폐 지구력 회복 속도
+    recoverySpeed?: string[]; // ['fast', 'slow']
+    
+    // 유연성 항목별 평가
+    flexibilityItems?: {
+      sitAndReach?: "A" | "B" | "C";
+      shoulder?: "A" | "B" | "C";
+      hip?: "A" | "B" | "C";
+      hamstring?: "A" | "B" | "C";
+    };
+    
+    // 안정성 평가
+    ohsa?: "A" | "B" | "C";
+    pain?: "none" | "present";
+    
+    // 체성분 데이터
+    muscleMass?: number;
+    fatMass?: number;
+    bodyFatPercentage?: number;
+    
+    // 관찰 포인트
+    observations?: {
+      [key: string]: any;
+    };
+    
+    // 좌우 차이
+    leftRightDifference?: {
+      left?: number;
+      right?: number;
+    };
+    
+    // 기타 상세 정보
+    [key: string]: any;
+  };
 }
 
 export interface UpdateAssessmentRequest {

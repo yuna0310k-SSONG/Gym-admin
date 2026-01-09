@@ -160,6 +160,9 @@ export default function MemberDetailPage() {
           </h1>
         </div>
         <div className="flex space-x-3">
+          <Link href={`/dashboard/members/${member.id}/assessment/new`}>
+            <Button variant="secondary">초기 평가</Button>
+          </Link>
           <Link href={`/dashboard/members/${member.id}/edit`}>
             <Button variant="primary">수정</Button>
           </Link>

@@ -23,6 +23,7 @@ export interface Member {
   email: string;
   phone: string;
   joinDate: string;
+  birthDate?: string; // 생년월일 (YYYY-MM-DD 형식)
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   height?: number; // 키 (cm)
   weight?: number; // 몸무게 (kg)

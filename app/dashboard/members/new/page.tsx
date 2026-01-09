@@ -21,18 +21,7 @@ interface NewMemberFormData extends CreateMemberRequest {
     bodyWeight?: number;
     condition?: "EXCELLENT" | "GOOD" | "NORMAL" | "POOR";
     trainerComment?: string;
-    items: Array<{
-      category:
-        | "STRENGTH"
-        | "CARDIO"
-        | "ENDURANCE"
-        | "FLEXIBILITY"
-        | "BODY"
-        | "STABILITY";
-      name: string;
-      value: number;
-      unit: string;
-    }>;
+    items?: CreateAssessmentRequest["items"];
   };
   injuries?: CreateInjuryRequest[];
 }
