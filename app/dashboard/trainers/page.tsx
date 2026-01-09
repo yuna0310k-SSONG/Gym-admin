@@ -212,10 +212,10 @@ export default function TrainersPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white">트레이너 관리</h1>
-        <p className="text-[#9ca3af] mt-2">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">트레이너 관리</h1>
+        <p className="text-[#9ca3af] mt-2 text-sm sm:text-base">
           승인 대기 / 승인된 / 거부된 트레이너를 한 곳에서 관리할 수 있습니다.
         </p>
       </div>

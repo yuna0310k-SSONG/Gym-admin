@@ -114,15 +114,15 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-6">
-      <div className="mb-6">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
         <Link
           href="/dashboard"
           className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
         >
           ← 대시보드로 돌아가기
         </Link>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
           내 정보 수정
         </h1>
       </div>

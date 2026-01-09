@@ -82,14 +82,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-4 sm:px-6">
       <div className="w-full max-w-sm text-[#e5e7eb]">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
             ADMIN PLATFORM
           </p>
-          <h2 className="text-3xl font-medium tracking-tight text-[#f9fafb]">
+          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#f9fafb]">
             로그인
           </h2>
         </div>
@@ -149,7 +149,7 @@ function LoginForm() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-12 flex justify-between text-sm text-[#9ca3af]">
+        <div className="mt-8 sm:mt-12 flex justify-between text-sm text-[#9ca3af]">
           <Link href="/register" className="hover:text-white transition">
             회원가입
           </Link>
@@ -166,13 +166,13 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-6">
+        <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-4 sm:px-6">
           <div className="w-full max-w-sm text-[#e5e7eb]">
-            <div className="mb-12">
+            <div className="mb-8 sm:mb-12">
               <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
                 ADMIN PLATFORM
               </p>
-              <h2 className="text-3xl font-medium tracking-tight text-[#f9fafb]">
+              <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#f9fafb]">
                 로그인
               </h2>
             </div>

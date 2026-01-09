@@ -259,14 +259,34 @@ export default function NewInitialAssessmentPage() {
         });
       }
 
-      // 4. 유연성은 백엔드 enum 미지원으로 제외
+      // 4. 유연성
+      const flexibilityItemsEntries = Object.entries(
+        formData.flexibilityItems || {}
+      ).filter(
+        ([_, value]) =>
+          value && (value === "A" || value === "B" || value === "C")
+      );
+
+      if (flexibilityItemsEntries.length > 0) {
+        const flexibilityItemsObj: Record<string, string> = {};
+        flexibilityItemsEntries.forEach(([key, value]) => {
+          if (value) {
+            flexibilityItemsObj[key] = value;
+          }
+        });
+
+        items.push({
+          category: "FLEXIBILITY",
+          name: "유연성 평가",
+          details: {
+            flexibilityItems: flexibilityItemsObj,
+          },
+        });
+      }
 
       // 5. 체성분
-      if (
-        formData.muscleMass &&
-        formData.fatMass &&
-        formData.bodyFatPercentage
-      ) {
+      // muscleMass와 bodyFatPercentage만 있으면 추가 (fatMass는 선택)
+      if (formData.muscleMass && formData.bodyFatPercentage) {
         items.push({
           category: "BODY",
           name: "인바디",
@@ -274,7 +294,7 @@ export default function NewInitialAssessmentPage() {
           unit: "kg",
           details: {
             muscleMass: formData.muscleMass,
-            fatMass: formData.fatMass,
+            ...(formData.fatMass && { fatMass: formData.fatMass }), // fatMass는 선택 사항
             bodyFatPercentage: formData.bodyFatPercentage,
           },
         });
@@ -322,11 +342,6 @@ export default function NewInitialAssessmentPage() {
         return cleanedItem;
       });
 
-      // FLEXIBILITY 항목 제외 (백엔드 enum 미지원)
-      const itemsWithoutFlexibility = cleanedItems.filter(
-        (item) => item.category !== "FLEXIBILITY"
-      );
-
       // 요청 데이터 구성: undefined 값 제외
       requestData = {
         assessmentType: "INITIAL",
@@ -338,7 +353,7 @@ export default function NewInitialAssessmentPage() {
         ...(formData.trainerComment?.trim() && {
           trainerComment: formData.trainerComment.trim(),
         }),
-        items: itemsWithoutFlexibility, // FLEXIBILITY 제외된 항목들 (빈 배열도 허용)
+        items: cleanedItems, // 모든 항목 포함 (유연성 포함)
       };
 
       // 디버깅: 전송되는 데이터 확인
@@ -417,7 +432,7 @@ export default function NewInitialAssessmentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
       {/* 헤더 */}
       <div className="mb-6">
         <Link

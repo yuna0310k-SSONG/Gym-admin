@@ -136,6 +136,12 @@ export default function NewMemberPage() {
         userMessage =
           "전화번호 관련 오류가 발생했습니다. 전화번호를 확인해주세요.";
       } else if (
+        extractedMessage.includes("성별") ||
+        extractedMessage.includes("gender") ||
+        extractedMessage.includes("MALE 또는 FEMALE")
+      ) {
+        userMessage = "성별을 올바르게 선택해주세요. (남성 또는 여성)";
+      } else if (
         extractedMessage.includes("400") ||
         extractedMessage.includes("Bad Request")
       ) {
@@ -163,16 +169,20 @@ export default function NewMemberPage() {
   };
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
         <Link
           href="/dashboard/members"
           className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
         >
           ← 목록으로 돌아가기
         </Link>
-        <h1 className="text-3xl font-bold text-white">새 회원 등록</h1>
-        <p className="text-[#c9c7c7] mt-2">회원 기본 정보를 등록합니다.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">
+          새 회원 등록
+        </h1>
+        <p className="text-[#c9c7c7] mt-2 text-sm sm:text-base">
+          회원 기본 정보를 등록합니다.
+        </p>
       </div>
       <div className="max-w-4xl">
         {errorMessage && (

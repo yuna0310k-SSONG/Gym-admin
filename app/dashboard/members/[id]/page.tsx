@@ -168,7 +168,7 @@ export default function MemberDetailPage() {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* 헤더 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -178,26 +178,32 @@ export default function MemberDetailPage() {
           >
             ← 목록으로 돌아가기
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
             {member.name} 회원 상세
           </h1>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
           {hasInitialAssessment === false && (
-            <Link href={`/dashboard/members/${member.id}/assessment/new`}>
-              <Button variant="secondary">초기 평가</Button>
+            <Link 
+              href={`/dashboard/members/${member.id}/assessment/new`}
+              className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors"
+            >
+              초기 평가
             </Link>
           )}
-          <Link href={`/dashboard/members/${member.id}/edit`}>
-            <Button variant="primary">수정</Button>
+          <Link 
+            href={`/dashboard/members/${member.id}/edit`}
+            className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors"
+          >
+            수정
           </Link>
-          <Button
-            variant="danger"
+          <button
             onClick={handleDeleteClick}
             disabled={isDeleting}
+            className="text-xs sm:text-sm text-red-400 hover:text-red-300 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             삭제
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -238,7 +244,7 @@ export default function MemberDetailPage() {
           }}
         >
           <div
-            className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-yellow-500/30"
+            className="bg-[#1a1d24] rounded-lg p-4 sm:p-6 max-w-md w-full mx-4 border border-yellow-500/30"
             onClick={(e) => {
               // 모달 컨텐츠 클릭 시 이벤트 전파 방지
               e.stopPropagation();

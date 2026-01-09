@@ -63,11 +63,43 @@ export default function EditMemberPage() {
       router.push(`/dashboard/members/${memberId}`);
     } catch (err) {
       console.error("회원 수정 실패:", err);
-      showError(
-        err instanceof Error
-          ? err.message
-          : "회원 정보 수정에 실패했습니다. 다시 시도해주세요."
-      );
+
+      // 에러 메시지 추출
+      const errorObj = err as any;
+      const errorMessage =
+        errorObj?.error?.message ||
+        errorObj?.message ||
+        (err instanceof Error ? err.message : "회원 정보 수정에 실패했습니다.");
+
+      // 사용자 친화적인 에러 메시지로 변환
+      let userMessage = errorMessage;
+
+      if (
+        errorMessage.includes("성별") ||
+        errorMessage.includes("gender") ||
+        errorMessage.includes("MALE 또는 FEMALE")
+      ) {
+        userMessage = "성별을 올바르게 선택해주세요. (남성 또는 여성)";
+      } else if (
+        errorMessage.includes("이미 등록된 이메일") ||
+        errorMessage.includes("already registered") ||
+        errorMessage.includes("duplicate")
+      ) {
+        userMessage = "이미 등록된 이메일입니다. 다른 이메일을 사용해주세요.";
+      } else if (
+        errorMessage.includes("이메일") ||
+        errorMessage.includes("email")
+      ) {
+        userMessage = "이메일 관련 오류가 발생했습니다. 이메일을 확인해주세요.";
+      } else if (
+        errorMessage.includes("전화번호") ||
+        errorMessage.includes("phone")
+      ) {
+        userMessage =
+          "전화번호 관련 오류가 발생했습니다. 전화번호를 확인해주세요.";
+      }
+
+      showError(userMessage);
     } finally {
       setSaving(false);
     }
@@ -79,8 +111,8 @@ export default function EditMemberPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-6">
-        <div className="mb-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="mb-4 sm:mb-6">
           <Skeleton height={24} width={200} className="mb-2" />
           <Skeleton height={36} width={400} />
         </div>
@@ -91,7 +123,7 @@ export default function EditMemberPage() {
 
   if (error || !member) {
     return (
-      <div className="max-w-xl">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <Card className="bg-[#0f1115]">
           <p className="text-[#f87171] mb-4">
             {error || "회원을 찾을 수 없습니다."}
@@ -105,20 +137,24 @@ export default function EditMemberPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
         <Link
           href={`/dashboard/members/${member.id}`}
           className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
         >
           ← 상세로 돌아가기
         </Link>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
           {member.name} 회원 정보 수정
         </h1>
       </div>
       <div className="max-w-2xl">
-        <MemberForm member={member} onSubmit={handleSubmit} onCancel={handleCancel} />
+        <MemberForm
+          member={member}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
         {saving && (
           <div className="mt-4 text-center">
             <p className="text-[#9ca3af]">회원 정보를 저장 중...</p>
@@ -128,6 +164,3 @@ export default function EditMemberPage() {
     </div>
   );
 }
-
-
-

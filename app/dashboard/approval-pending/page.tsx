@@ -15,7 +15,7 @@ export default function ApprovalPendingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#0f1115] px-4 sm:px-6 py-4">
       <Card className="bg-[#0f1115] max-w-md w-full">
         <div className="text-center">
           <div className="mb-6">

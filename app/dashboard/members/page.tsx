@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -10,18 +11,18 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Skeleton, { TableRowSkeleton } from "@/components/ui/Skeleton";
 import BulkActionsBar from "@/components/members/BulkActionsBar";
-import ExportButton from "@/components/members/ExportButton";
 import { useToast } from "@/providers/ToastProvider";
 import { exportMembersToCSV, downloadCSV } from "@/lib/utils/export";
 import type { Member } from "@/types/api/responses";
 import { memberApi } from "@/lib/api/members";
-import { onlyDigits } from "@/lib/utils/phone";
+import { onlyDigits, formatPhoneNumberKR } from "@/lib/utils/phone";
 
 type SortField = "name" | "joinDate" | "status" | null;
 type SortOrder = "asc" | "desc";
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 export default function MembersPage() {
+  const router = useRouter();
   const { showError, showSuccess } = useToast();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,16 +191,30 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <div>
-        <div className="flex justify-between items-center mb-6">
+      <div className="px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
           <Skeleton height={36} width={200} />
           <Skeleton height={40} width={150} />
         </div>
-        <div className="mb-6 p-6 bg-[#0f1115] rounded-lg space-y-4">
+        <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-[#0f1115] rounded-lg space-y-4">
           <Skeleton height={20} width="30%" />
           <Skeleton height={40} width="100%" />
         </div>
-        <div className="p-6 bg-[#0f1115] rounded-lg">
+        {/* 모바일: 카드 스켈레톤 */}
+        <div className="block md:hidden space-y-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="p-4 bg-[#1a1d24] rounded-lg">
+              <Skeleton height={24} width="60%" className="mb-2" />
+              <Skeleton height={16} width="80%" className="mb-3" />
+              <div className="pt-3 border-t border-[#374151] space-y-2">
+                <Skeleton height={14} width="100%" />
+                <Skeleton height={14} width="100%" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* 데스크톱: 테이블 스켈레톤 */}
+        <div className="hidden md:block p-6 bg-[#0f1115] rounded-lg">
           <table className="min-w-full divide-y divide-[#374151]">
             <thead className="bg-[#1a1d24]">
               <tr>
@@ -222,38 +237,46 @@ export default function MembersPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[#f9fafb]">회원 관리</h1>
-        <div className="flex gap-3 whitespace-nowrap">
-          <ExportButton members={filteredAndSortedMembers} />
-          <Link href="/dashboard/members/new">
-            <Button variant="primary">새 회원 등록</Button>
-          </Link>
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">
+            회원 관리
+          </h1>
+          <p className="text-sm text-[#9ca3af] hidden sm:block">
+            회원 정보를 조회하고 관리할 수 있습니다
+          </p>
         </div>
+        <Link
+          href="/dashboard/members/new"
+          className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors ml-auto"
+        >
+          새 회원 등록
+        </Link>
       </div>
 
       {/* 검색 및 필터 */}
-      <Card className="mb-6 bg-[#0f1115]">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div className="flex-1 max-w-md">
+      <Card className="mb-6 bg-[#0f1115] border-[#374151]">
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
+          <div className="flex-1">
             <Input
               label="검색"
               placeholder="이름, 이메일, 전화번호로 검색..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // 검색 시 첫 페이지로
+                setCurrentPage(1);
               }}
+              className="w-full"
             />
           </div>
-          <div className="w-full md:w-auto md:min-w-[200px]">
+          <div className="w-full md:w-48">
             <Select
               label="상태 필터"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value as StatusFilter);
-                setCurrentPage(1); // 필터 변경 시 첫 페이지로
+                setCurrentPage(1);
               }}
               options={[
                 { value: "ALL", label: "전체" },
@@ -266,12 +289,16 @@ export default function MembersPage() {
         </div>
       </Card>
 
-      {/* 회원 수 및 페이지 크기 선택 */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <p className="text-sm text-[#9ca3af]">
-            총 {filteredAndSortedMembers.length}명의 회원
-          </p>
+      {/* 회원 수 및 컨트롤 */}
+      <div className="flex flex-row items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-[#9ca3af]">총</span>
+          <span className="text-lg font-bold text-white">
+            {filteredAndSortedMembers.length}
+          </span>
+          <span className="text-sm font-medium text-[#9ca3af]">명</span>
+        </div>
+        <div className="hidden sm:block">
           <button
             onClick={() => {
               setIsSelectionMode(!isSelectionMode);
@@ -279,17 +306,19 @@ export default function MembersPage() {
                 setSelectedMemberIds([]);
               }
             }}
-            className={`text-sm px-3 py-1 rounded transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               isSelectionMode
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d24]"
+                ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20"
+                : "bg-[#1a1d24] text-[#9ca3af] hover:text-white hover:bg-[#262b33] border border-[#374151]"
             }`}
           >
-            선택
+            {isSelectionMode ? "선택 모드 해제" : "선택"}
           </button>
         </div>
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <span className="text-sm text-[#9ca3af]">페이지당:</span>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-[#9ca3af] whitespace-nowrap">
+            페이지당:
+          </label>
           <Select
             value={pageSize.toString()}
             onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -298,7 +327,7 @@ export default function MembersPage() {
               { value: "20", label: "20개" },
               { value: "50", label: "50개" },
             ]}
-            className="w-32"
+            className="w-24 sm:w-32"
           />
         </div>
       </div>
@@ -314,29 +343,140 @@ export default function MembersPage() {
           </div>
         ) : (
           <>
-            <MemberTable
-              members={paginatedMembers}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSort={handleSort}
-              selectedIds={selectedMemberIds}
-              onSelectionChange={
-                isSelectionMode ? setSelectedMemberIds : undefined
-              }
-              startIndex={(currentPage - 1) * pageSize}
-            />
+            {/* 모바일: 카드 형태 */}
+            <div className="block md:hidden space-y-3">
+              {paginatedMembers.map((member, index) => {
+                const isSelected = selectedMemberIds.includes(member.id);
+                const rowNumber = (currentPage - 1) * pageSize + index + 1;
+                const statusColors = {
+                  ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
+                  INACTIVE: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+                  SUSPENDED: "bg-red-500/20 text-red-400 border-red-500/30",
+                };
+                return (
+                  <div
+                    key={member.id}
+                    onClick={() =>
+                      router.push(`/dashboard/members/${member.id}`)
+                    }
+                    className={`relative p-4 bg-[#1a1d24] rounded-xl border-2 transition-all ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                        : "border-[#374151] hover:border-[#4b5563] hover:bg-[#1f2329]"
+                    } cursor-pointer active:scale-[0.98]`}
+                  >
+                    {/* 선택 체크박스 */}
+                    {isSelectionMode && (
+                      <div
+                        className="absolute top-3 right-3 z-10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMemberIds([
+                                ...selectedMemberIds,
+                                member.id,
+                              ]);
+                            } else {
+                              setSelectedMemberIds(
+                                selectedMemberIds.filter(
+                                  (id) => id !== member.id
+                                )
+                              );
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-2 border-[#4b5563] bg-[#0f1115] text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#1a1d24] checked:bg-blue-500 checked:border-blue-500 cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    {/* 헤더: 번호, 이름, 상태 */}
+                    <div className="flex items-start gap-3 mb-3 pr-8">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#0f1115] border border-[#374151] flex items-center justify-center">
+                        <span className="text-xs font-semibold text-[#9ca3af]">
+                          {rowNumber}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <h3 className="text-lg font-bold text-white truncate">
+                            {member.name}
+                          </h3>
+                          <span
+                            className={`px-2.5 py-1 text-xs font-medium rounded-md border ${
+                              statusColors[member.status]
+                            }`}
+                          >
+                            {member.status === "ACTIVE"
+                              ? "활성"
+                              : member.status === "INACTIVE"
+                              ? "비활성"
+                              : "정지"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#9ca3af] truncate">
+                          {member.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 상세 정보 */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#374151]">
+                      <div>
+                        <p className="text-xs text-[#6b7280] mb-1">전화번호</p>
+                        <p className="text-sm font-medium text-[#e5e7eb]">
+                          {formatPhoneNumberKR(member.phone)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#6b7280] mb-1">가입일</p>
+                        <p className="text-sm font-medium text-[#e5e7eb]">
+                          {new Date(member.joinDate).toLocaleDateString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 데스크톱: 테이블 형태 */}
+            <div className="hidden md:block overflow-x-auto">
+              <MemberTable
+                members={paginatedMembers}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+                selectedIds={selectedMemberIds}
+                onSelectionChange={
+                  isSelectionMode ? setSelectedMemberIds : undefined
+                }
+                startIndex={(currentPage - 1) * pageSize}
+              />
+            </div>
             {/* 페이지네이션 */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-6 pb-4">
+              <div className="flex flex-wrap justify-center items-center gap-2 mt-6 pb-4 px-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
+                  className="min-w-[60px]"
                 >
                   이전
                 </Button>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap justify-center">
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter((page) => {
                       // 현재 페이지 주변 2페이지씩만 표시
@@ -352,7 +492,7 @@ export default function MembersPage() {
                         return (
                           <span
                             key={`ellipsis-${page}`}
-                            className="px-2 text-[#9ca3af]"
+                            className="px-2 py-1 text-[#9ca3af] flex items-center"
                           >
                             ...
                           </span>
@@ -364,7 +504,7 @@ export default function MembersPage() {
                           variant={currentPage === page ? "primary" : "outline"}
                           size="sm"
                           onClick={() => handlePageChange(page)}
-                          className="min-w-[40px]"
+                          className="min-w-[44px]"
                         >
                           {page}
                         </Button>
@@ -376,6 +516,7 @@ export default function MembersPage() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  className="min-w-[60px]"
                 >
                   다음
                 </Button>

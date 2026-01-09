@@ -90,11 +90,11 @@ export default function InsightsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">인사이트</h1>
-          <p className="text-[#9ca3af]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">인사이트</h1>
+          <p className="text-[#9ca3af] text-sm sm:text-base">
             헬스장 전체 운영 현황 및 통계를 한눈에 확인하세요
           </p>
         </div>

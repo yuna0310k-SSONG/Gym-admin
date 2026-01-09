@@ -62,12 +62,12 @@ export default function DashboardPage() {
   }, [user]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">대시보드</h1>
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">대시보드</h1>
         {user?.role === "ADMIN" && (
-          <Link href="/dashboard/trainers">
-            <Button variant="primary">
+          <Link href="/dashboard/trainers" className="w-full sm:w-auto">
+            <Button variant="primary" className="w-full sm:w-auto">
               트레이너 관리
               {pendingTrainerCount > 0 && ` (${pendingTrainerCount}명 대기)`}
             </Button>
@@ -78,17 +78,17 @@ export default function DashboardPage() {
       {/* Admin 전용: 트레이너 관리 알림 */}
       {user?.role === "ADMIN" && pendingTrainerCount > 0 && (
         <Card className="bg-yellow-500/10 border-yellow-500/20">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-yellow-400 mb-1">
+              <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-1">
                 승인 대기 중인 트레이너가 있습니다
               </h3>
               <p className="text-[#9ca3af] text-sm">
                 {pendingTrainerCount}명의 트레이너가 승인을 기다리고 있습니다.
               </p>
             </div>
-            <Link href="/dashboard/trainers">
-              <Button variant="primary">트레이너 관리하러 가기</Button>
+            <Link href="/dashboard/trainers" className="w-full sm:w-auto">
+              <Button variant="primary" className="w-full sm:w-auto">트레이너 관리하러 가기</Button>
             </Link>
           </div>
         </Card>
@@ -226,10 +226,10 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-6 pt-6 border-t border-gray-700">
-              <h3 className="text-lg font-semibold text-white mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-4">
                 주간 변화
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 {Object.entries(weeklyData.changes || {}).map(
                   ([key, value]) => {
                     const labels: Record<string, string> = {

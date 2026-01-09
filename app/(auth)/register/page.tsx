@@ -102,14 +102,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1115] text-[#e5e7eb] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-[#0f1115] text-[#e5e7eb] flex items-center justify-center px-4 sm:px-6 py-8">
       <div className="w-full max-w-sm">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <p className="text-xs tracking-[0.35em] text-[#6b7280] mb-3">
             ADMIN PLATFORM
           </p>
-          <h2 className="text-3xl font-medium tracking-tight">회원가입</h2>
+          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight">회원가입</h2>
         </div>
 
         {/* Form */}
@@ -228,7 +228,7 @@ export default function RegisterPage() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-12 flex justify-between text-sm text-[#9ca3af]">
+        <div className="mt-8 sm:mt-12 flex justify-between text-sm text-[#9ca3af]">
           <Link href="/login" className="hover:text-white transition">
             로그인
           </Link>

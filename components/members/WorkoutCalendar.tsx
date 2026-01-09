@@ -351,8 +351,8 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
       });
     }
 
-    // 다음 달의 첫 날짜들 (캘린더를 42일로 채우기 위해)
-    const remainingDays = 42 - days.length;
+    // 다음 달의 첫 날짜들 (캘린더를 35일(5주)로 채우기 위해)
+    const remainingDays = 35 - days.length;
     for (let date = 1; date <= remainingDays; date++) {
       const dateObj = new Date(year, month + 1, date);
       const dateString = formatDateToString(dateObj);
