@@ -7,20 +7,174 @@ import QuickActionButton from "@/components/dashboard/QuickActionButton";
 import RecentActivityFeed, {
   type ActivityItem,
 } from "@/components/dashboard/RecentActivityFeed";
-import StatisticsCards, {
-  type DashboardStats,
-} from "@/components/dashboard/StatisticsCards";
 import QuickMemberList from "@/components/dashboard/QuickMemberList";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { trainerApi } from "@/lib/api/trainers";
 import { memberApi } from "@/lib/api/members";
-import { assessmentApi } from "@/lib/api/assessments";
-import { insightApi } from "@/lib/api/insights";
 import type { Member } from "@/types/api/responses";
 
 /* =========================
    서브 컴포넌트
 ========================= */
+
+function DashboardCalendar() {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const monthNames = [
+    "1월",
+    "2월",
+    "3월",
+    "4월",
+    "5월",
+    "6월",
+    "7월",
+    "8월",
+    "9월",
+    "10월",
+    "11월",
+    "12월",
+  ];
+
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+    );
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+    );
+  };
+
+  const daysInMonth = getDaysInMonth(currentMonth);
+  const firstDay = getFirstDayOfMonth(currentMonth);
+  const today = new Date();
+  const isToday = (day: number) => {
+    return (
+      day === today.getDate() &&
+      currentMonth.getMonth() === today.getMonth() &&
+      currentMonth.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const calendarDays = [];
+  // 이전 달의 마지막 날짜들
+  const prevMonthDays = getDaysInMonth(
+    new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+  );
+  for (let i = firstDay - 1; i >= 0; i--) {
+    calendarDays.push({
+      day: prevMonthDays - i,
+      isCurrentMonth: false,
+    });
+  }
+  // 현재 달의 날짜들
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push({
+      day,
+      isCurrentMonth: true,
+    });
+  }
+  // 다음 달의 첫 날짜들 (5주로 채우기)
+  const remainingDays = 35 - calendarDays.length;
+  for (let day = 1; day <= remainingDays; day++) {
+    calendarDays.push({
+      day,
+      isCurrentMonth: false,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* 월 네비게이션 */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={goToPreviousMonth}
+          className="p-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-[#e5e7eb]"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <h3 className="text-lg font-semibold text-white">
+          {currentMonth.getFullYear()}년 {monthNames[currentMonth.getMonth()]}
+        </h3>
+        <button
+          onClick={goToNextMonth}
+          className="p-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-[#e5e7eb]"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* 요일 헤더 */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map((day) => (
+          <div
+            key={day}
+            className="text-center text-sm font-medium text-[#9ca3af] py-2"
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* 캘린더 그리드 */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map(({ day, isCurrentMonth }, index) => (
+          <div
+            key={index}
+            className={`
+              aspect-square flex items-center justify-center text-sm rounded-lg transition-colors
+              ${
+                isCurrentMonth
+                  ? isToday(day)
+                    ? "bg-blue-500/20 text-blue-300 font-bold border border-blue-500/50"
+                    : "text-[#e5e7eb] hover:bg-[#1a1d24]"
+                  : "text-[#6b7280]"
+              }
+            `}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function WeeklyTrend({
   newMembers,
@@ -77,52 +231,6 @@ function WeeklyTrend({
   );
 }
 
-function ActionRequiredMembers({ members }: { members: Member[] }) {
-  if (members.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm text-gray-500">
-          현재 조치가 필요한 회원이 없습니다.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-2">
-      {members.map((m) => (
-        <li
-          key={m.id}
-          className="flex items-center justify-between px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20"
-        >
-          <span className="text-sm text-white">{m.name}</span>
-          <Link
-            href={`/dashboard/members/${m.id}`}
-            className="text-xs text-red-400 hover:underline"
-          >
-            확인
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function PendingAssessments({ count }: { count: number }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full space-y-2">
-      <p className="text-3xl font-bold text-yellow-400">{count}</p>
-      <p className="text-sm text-gray-400">초기 평가 미완료 회원</p>
-      <Link
-        href="/dashboard/members"
-        className="text-xs text-blue-400 hover:underline"
-      >
-        바로가기 →
-      </Link>
-    </div>
-  );
-}
-
 /* =========================
    메인 페이지
 ========================= */
@@ -133,12 +241,6 @@ export default function DashboardPage() {
   const [pendingTrainerCount, setPendingTrainerCount] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalMembers: 0,
-    activeMembers: 0,
-    pendingInitialAssessments: 0,
-    riskMembers: 0,
-  });
 
   const [todaySummary, setTodaySummary] = useState({
     newMembers: 0,
@@ -180,36 +282,6 @@ export default function DashboardPage() {
       const membersData = await memberApi.getMembers(1, 100);
       setMembers(membersData.members);
 
-      const activeMembers = membersData.members.filter(
-        (m) => m.status === "ACTIVE"
-      ).length;
-
-      const assessmentFlags = await Promise.all(
-        membersData.members.map(async (m) => {
-          try {
-            const res = await assessmentApi.getAssessments(m.id);
-            return res.assessments.some((a) => a.isInitial);
-          } catch {
-            return false;
-          }
-        })
-      );
-
-      const pendingInitialAssessments = assessmentFlags.filter(
-        (v) => !v
-      ).length;
-
-      const riskMembers =
-        (await insightApi.getRiskMembers().catch(() => ({ total: 0 })))
-          ?.total ?? 0;
-
-      setStats({
-        totalMembers: membersData.total,
-        activeMembers,
-        pendingInitialAssessments,
-        riskMembers,
-      });
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -249,9 +321,6 @@ export default function DashboardPage() {
 
     fetchDashboardData();
   }, []);
-
-  const actionRequiredMembers =
-    stats.pendingInitialAssessments > 0 ? members.slice(0, 5) : [];
 
   /* =========================
      UI
@@ -365,48 +434,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI + 트렌드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="lg:col-span-2">
-          <StatisticsCards stats={stats} isLoading={loading} />
-        </div>
+      {/* 캘린더 + 오른쪽 섹션 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {/* 왼쪽: 캘린더 */}
         <Card
-          title="이번 주 요약"
+          title="캘린더"
           className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
         >
-          <WeeklyTrend newMembers={3} assessments={2} />
-        </Card>
-      </div>
-
-      {/* 액션 / 회원 / 평가 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch mb-4">
-        <Card
-          title="⚠️ 액션 필요 회원"
-          className="bg-gradient-to-br from-[#0f1115] via-[#1a0f15] to-[#0f1115] border-red-500/30 h-full shadow-2xl shadow-red-500/10 hover:shadow-red-500/20 transition-all duration-300 hover:border-red-500/40 backdrop-blur-sm"
-        >
-          <div className="flex flex-col h-full">
-            <ActionRequiredMembers members={actionRequiredMembers} />
-          </div>
+          <DashboardCalendar />
         </Card>
 
-        <Card
-          title="회원 관리"
-          className="bg-gradient-to-br from-[#0f1115] via-[#0f151a] to-[#0f1115] border-blue-500/30 h-full shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:border-blue-500/40 backdrop-blur-sm"
-        >
-          <div className="flex flex-col h-full">
-            <QuickMemberList
-              members={members.slice(0, 10)}
-              isLoading={loading}
-            />
-          </div>
-        </Card>
+        {/* 오른쪽: 이번 주 요약 + 회원 관리 */}
+        <div className="space-y-4">
+          <Card
+            title="이번 주 요약"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
+          >
+            <WeeklyTrend newMembers={3} assessments={2} />
+          </Card>
 
-        <Card
-          title="📋 평가 미완료"
-          className="bg-gradient-to-br from-[#0f1115] via-[#15150f] to-[#0f1115] border-yellow-500/30 h-full shadow-2xl shadow-yellow-500/10 hover:shadow-yellow-500/20 transition-all duration-300 hover:border-yellow-500/40 backdrop-blur-sm"
-        >
-          <PendingAssessments count={stats.pendingInitialAssessments} />
-        </Card>
+          <Card
+            title="회원 관리"
+            className="bg-gradient-to-br from-[#0f1115] via-[#0f151a] to-[#0f1115] border-blue-500/30 shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:border-blue-500/40 backdrop-blur-sm"
+          >
+            <div className="flex flex-col h-full">
+              <QuickMemberList
+                members={members.slice(0, 10)}
+                isLoading={loading}
+              />
+            </div>
+          </Card>
+        </div>
       </div>
 
       <Card
