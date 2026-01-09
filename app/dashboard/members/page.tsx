@@ -237,26 +237,42 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="px-4 sm:px-6 py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">
-            회원 관리
-          </h1>
-          <p className="text-sm text-[#9ca3af] hidden sm:block">
-            회원 정보를 조회하고 관리할 수 있습니다
-          </p>
+    <div className="relative px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
+      {/* 애니메이션 배경 그라데이션 */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+      </div>
+
+      <div className="relative mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="relative group">
+            {/* 애니메이션 그라데이션 바 */}
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
+
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-2 pl-4 drop-shadow-lg">
+              회원 관리
+            </h1>
+            <p className="text-sm text-[#9ca3af] hidden sm:block pl-4">
+              회원 정보를 조회하고 관리할 수 있습니다
+            </p>
+          </div>
+          <Link
+            href="/dashboard/members/new"
+            className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors ml-auto px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            새 회원 등록
+          </Link>
         </div>
-        <Link
-          href="/dashboard/members/new"
-          className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors ml-auto"
-        >
-          새 회원 등록
-        </Link>
       </div>
 
       {/* 검색 및 필터 */}
-      <Card className="mb-6 bg-[#0f1115] border-[#374151]">
+      <Card className="mb-4 bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm">
         <div className="flex flex-col md:flex-row md:items-end gap-4">
           <div className="flex-1">
             <Input
@@ -332,7 +348,7 @@ export default function MembersPage() {
         </div>
       </div>
 
-      <Card className="bg-[#0f1115]">
+      <Card className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm">
         {paginatedMembers.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#9ca3af]">

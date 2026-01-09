@@ -168,44 +168,61 @@ export default function MemberDetailPage() {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
-      {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <Link
-            href="/dashboard/members"
-            className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
-          >
-            ← 목록으로 돌아가기
-          </Link>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-            {member.name} 회원 상세
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
-          {hasInitialAssessment === false && (
-            <Link 
-              href={`/dashboard/members/${member.id}/assessment/new`}
-              className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors"
-            >
-              초기 평가
-            </Link>
-          )}
-          <Link 
-            href={`/dashboard/members/${member.id}/edit`}
-            className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors"
-          >
-            수정
-          </Link>
-          <button
-            onClick={handleDeleteClick}
-            disabled={isDeleting}
-            className="text-xs sm:text-sm text-red-400 hover:text-red-300 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            삭제
-          </button>
-        </div>
+    <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
+      {/* 애니메이션 배경 그라데이션 */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
       </div>
+
+      <div className="relative space-y-4 sm:space-y-6">
+        {/* 헤더 */}
+        <div className="relative mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="relative group">
+              {/* 애니메이션 그라데이션 바 */}
+              <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
+              <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
+              
+              <Link
+                href="/dashboard/members"
+                className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
+              >
+                ← 목록으로 돌아가기
+              </Link>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
+                {member.name} 회원 상세
+              </h1>
+            </div>
+            <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+              {hasInitialAssessment === false && (
+                <Link 
+                  href={`/dashboard/members/${member.id}/assessment/new`}
+                  className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+                >
+                  초기 평가
+                </Link>
+              )}
+              <Link 
+                href={`/dashboard/members/${member.id}/edit`}
+                className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+              >
+                수정
+              </Link>
+              <button
+                onClick={handleDeleteClick}
+                disabled={isDeleting}
+                className="text-xs sm:text-sm text-red-400 hover:text-red-300 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg hover:bg-red-500/10"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
 
       {/* 목표 관리 (카드 없이) */}
       <section>
@@ -227,7 +244,7 @@ export default function MemberDetailPage() {
 
       {/* 탭 콘텐츠 */}
       <section>
-        <Card className="bg-[#0f1115]">
+        <Card className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm">
           <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
         </Card>
       </section>
@@ -369,6 +386,7 @@ export default function MemberDetailPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -432,520 +432,566 @@ export default function NewInitialAssessmentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-      {/* 헤더 */}
-      <div className="mb-6">
-        <Link
-          href={`/dashboard/members/${memberId}`}
-          className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
-        >
-          ← 회원 상세로 돌아가기
-        </Link>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          {member ? `${member.name}님 초기 평가 생성` : "초기 평가 생성"}
-        </h1>
-        <p className="text-[#9ca3af] mt-2">
-          회원의 초기 평가를 진행합니다. 모든 항목을 입력해주세요.
-        </p>
+    <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
+      {/* 애니메이션 배경 그라데이션 */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
       </div>
 
-      {/* 회원 정보 */}
-      {member && (
-        <Card className="bg-[#0f1115] mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium text-[#9ca3af]">이름</label>
-              <p className="mt-1 text-[#e5e7eb]">{member.name}</p>
-            </div>
-            {member.birthDate && (
-              <div>
-                <label className="text-sm font-medium text-[#9ca3af]">
-                  생년월일
-                </label>
-                <p className="mt-1 text-[#e5e7eb]">
-                  {new Date(member.birthDate).toLocaleDateString("ko-KR")}
-                </p>
-              </div>
-            )}
-            {member.height !== undefined && member.height !== null && (
-              <div>
-                <label className="text-sm font-medium text-[#9ca3af]">키</label>
-                <p className="mt-1 text-[#e5e7eb]">{member.height} cm</p>
-              </div>
-            )}
-            {member.weight !== undefined && member.weight !== null && (
-              <div>
-                <label className="text-sm font-medium text-[#9ca3af]">
-                  몸무게
-                </label>
-                <p className="mt-1 text-[#e5e7eb]">{member.weight} kg</p>
-              </div>
-            )}
+      <div className="relative">
+        {/* 헤더 */}
+        <div className="relative mb-6">
+          <div className="relative group">
+            {/* 애니메이션 그라데이션 바 */}
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
+
+            <Link
+              href={`/dashboard/members/${memberId}`}
+              className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
+            >
+              ← 회원 상세로 돌아가기
+            </Link>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
+              {member ? `${member.name}님 초기 평가 생성` : "초기 평가 생성"}
+            </h1>
+            <p className="text-[#9ca3af] mt-2 pl-4">
+              회원의 초기 평가를 진행합니다. 모든 항목을 입력해주세요.
+            </p>
           </div>
-        </Card>
-      )}
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 기본 정보 */}
-        <Card title="기본 정보" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <Input
-              type="date"
-              label="평가일"
-              value={formData.assessedAt}
-              onChange={(e) =>
-                setFormData({ ...formData, assessedAt: e.target.value })
-              }
-              error={errors.assessedAt}
-              required
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                type="number"
-                label="키 (cm)"
-                value={formData.height || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    height: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-              />
-              <Input
-                type="number"
-                label="체중 (kg)"
-                value={formData.bodyWeight || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    bodyWeight: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 회원 정보 */}
+        {member && (
+          <Card className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-1">
-                  컨디션
+                <label className="text-sm font-medium text-[#9ca3af]">
+                  이름
                 </label>
-                <select
-                  className="w-full px-3 py-2 bg-[#111827] border border-[#374151] rounded-lg text-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.condition || ""}
+                <p className="mt-1 text-[#e5e7eb]">{member.name}</p>
+              </div>
+              {member.birthDate && (
+                <div>
+                  <label className="text-sm font-medium text-[#9ca3af]">
+                    생년월일
+                  </label>
+                  <p className="mt-1 text-[#e5e7eb]">
+                    {new Date(member.birthDate).toLocaleDateString("ko-KR")}
+                  </p>
+                </div>
+              )}
+              {member.height !== undefined && member.height !== null && (
+                <div>
+                  <label className="text-sm font-medium text-[#9ca3af]">
+                    키
+                  </label>
+                  <p className="mt-1 text-[#e5e7eb]">{member.height} cm</p>
+                </div>
+              )}
+              {member.weight !== undefined && member.weight !== null && (
+                <div>
+                  <label className="text-sm font-medium text-[#9ca3af]">
+                    몸무게
+                  </label>
+                  <p className="mt-1 text-[#e5e7eb]">{member.weight} kg</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 기본 정보 */}
+          <Card
+            title="기본 정보"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
+              <Input
+                type="date"
+                label="평가일"
+                value={formData.assessedAt}
+                onChange={(e) =>
+                  setFormData({ ...formData, assessedAt: e.target.value })
+                }
+                error={errors.assessedAt}
+                required
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="키 (cm)"
+                  value={formData.height || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      condition: e.target.value as any,
+                      height: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
                     })
                   }
-                >
-                  <option value="">선택하세요</option>
-                  <option value="EXCELLENT">매우 좋음</option>
-                  <option value="GOOD">좋음</option>
-                  <option value="NORMAL">보통</option>
-                  <option value="POOR">나쁨</option>
-                </select>
+                  step="0.1"
+                />
+                <Input
+                  type="number"
+                  label="체중 (kg)"
+                  value={formData.bodyWeight || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      bodyWeight: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  step="0.1"
+                />
               </div>
-              <Input
-                label="트레이너 코멘트"
-                value={formData.trainerComment || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, trainerComment: e.target.value })
-                }
-                placeholder="평가 시 관찰한 내용을 기록해주세요."
-              />
-            </div>
-          </div>
-        </Card>
 
-        {/* 1. 하체 근력 */}
-        <Card title="1. 하체 근력" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                체중 스쿼트 수행 상태 <span className="text-red-400">*</span>
-              </label>
-              <RadioGroup
-                name="strengthGrade"
-                value={formData.strengthGrade}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    strengthGrade: value as any,
-                    strengthAlternative: value !== "D" ? "" : undefined,
-                  })
-                }
-              >
-                <Radio value="A" label="안정적으로 반복 수행" />
-                <Radio value="B" label="수행 가능, 깊이·정렬 일부 제한" />
-                <Radio value="C" label="수행 가능하나 불안정 / 연속 어려움" />
-                <Radio value="D" label="수행 불가 → 대체 항목" />
-              </RadioGroup>
-              {errors.strengthGrade && (
-                <p className="mt-1 text-sm text-red-400">
-                  {errors.strengthGrade}
-                </p>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#c9c7c7] mb-1">
+                    컨디션
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 bg-[#111827] border border-[#374151] rounded-lg text-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.condition || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        condition: e.target.value as any,
+                      })
+                    }
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="EXCELLENT">매우 좋음</option>
+                    <option value="GOOD">좋음</option>
+                    <option value="NORMAL">보통</option>
+                    <option value="POOR">나쁨</option>
+                  </select>
+                </div>
+                <Input
+                  label="트레이너 코멘트"
+                  value={formData.trainerComment || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trainerComment: e.target.value })
+                  }
+                  placeholder="평가 시 관찰한 내용을 기록해주세요."
+                />
+              </div>
             </div>
+          </Card>
 
-            {formData.strengthGrade === "D" && (
+          {/* 1. 하체 근력 */}
+          <Card
+            title="1. 하체 근력"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                  대체 항목 <span className="text-red-400">*</span>
+                  체중 스쿼트 수행 상태 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
-                  name="strengthAlternative"
-                  value={formData.strengthAlternative || ""}
+                  name="strengthGrade"
+                  value={formData.strengthGrade}
                   onChange={(value) =>
                     setFormData({
                       ...formData,
-                      strengthAlternative: value as any,
+                      strengthGrade: value as any,
+                      strengthAlternative: value !== "D" ? "" : undefined,
                     })
                   }
                 >
-                  <Radio value="D-1" label="체어/박스 스쿼트 가능" />
-                  <Radio value="D-2" label="보조 있어도 어려움" />
+                  <Radio value="A" label="안정적으로 반복 수행" />
+                  <Radio value="B" label="수행 가능, 깊이·정렬 일부 제한" />
+                  <Radio value="C" label="수행 가능하나 불안정 / 연속 어려움" />
+                  <Radio value="D" label="수행 불가 → 대체 항목" />
                 </RadioGroup>
-                {errors.strengthAlternative && (
+                {errors.strengthGrade && (
                   <p className="mt-1 text-sm text-red-400">
-                    {errors.strengthAlternative}
+                    {errors.strengthGrade}
                   </p>
                 )}
               </div>
-            )}
-          </div>
-        </Card>
 
-        {/* 2. 심폐 지구력 */}
-        <Card title="2. 심폐 지구력" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                스텝 테스트 수행 상태 <span className="text-red-400">*</span>
-              </label>
-              <RadioGroup
-                name="cardioGrade"
-                value={formData.cardioGrade}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    cardioGrade: value as any,
-                    recoverySpeed: value !== "B" ? [] : formData.recoverySpeed,
-                  })
-                }
-              >
-                <Radio value="A" label="리듬 유지 + 완주" />
-                <Radio value="B" label="리듬 유지" />
-                <Radio value="C" label="조기 중단 / 리듬 붕괴" />
-              </RadioGroup>
-              {errors.cardioGrade && (
-                <p className="mt-1 text-sm text-red-400">
-                  {errors.cardioGrade}
-                </p>
+              {formData.strengthGrade === "D" && (
+                <div>
+                  <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                    대체 항목 <span className="text-red-400">*</span>
+                  </label>
+                  <RadioGroup
+                    name="strengthAlternative"
+                    value={formData.strengthAlternative || ""}
+                    onChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        strengthAlternative: value as any,
+                      })
+                    }
+                  >
+                    <Radio value="D-1" label="체어/박스 스쿼트 가능" />
+                    <Radio value="D-2" label="보조 있어도 어려움" />
+                  </RadioGroup>
+                  {errors.strengthAlternative && (
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.strengthAlternative}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
+          </Card>
 
-            {formData.cardioGrade === "B" && (
+          {/* 2. 심폐 지구력 */}
+          <Card
+            title="2. 심폐 지구력"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                  회복 속도 (선택)
+                  스텝 테스트 수행 상태 <span className="text-red-400">*</span>
                 </label>
-                <div className="space-y-2">
-                  <Checkbox
-                    label="회복 빠름 (1분 이내 호흡 편안)"
-                    checked={formData.recoverySpeed.includes("fast")}
-                    onChange={(e) =>
-                      handleRecoverySpeedChange("fast", e.target.checked)
-                    }
-                  />
-                  <Checkbox
-                    label="회복 느림 (2분 이상 호흡 불편)"
-                    checked={formData.recoverySpeed.includes("slow")}
-                    onChange={(e) =>
-                      handleRecoverySpeedChange("slow", e.target.checked)
-                    }
-                  />
-                </div>
+                <RadioGroup
+                  name="cardioGrade"
+                  value={formData.cardioGrade}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      cardioGrade: value as any,
+                      recoverySpeed:
+                        value !== "B" ? [] : formData.recoverySpeed,
+                    })
+                  }
+                >
+                  <Radio value="A" label="리듬 유지 + 완주" />
+                  <Radio value="B" label="리듬 유지" />
+                  <Radio value="C" label="조기 중단 / 리듬 붕괴" />
+                </RadioGroup>
+                {errors.cardioGrade && (
+                  <p className="mt-1 text-sm text-red-400">
+                    {errors.cardioGrade}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-        </Card>
 
-        {/* 3. 근지구력 */}
-        <Card title="3. 근지구력" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                플랭크 수행 상태 <span className="text-red-400">*</span>
-              </label>
-              <RadioGroup
-                name="enduranceGrade"
-                value={formData.enduranceGrade}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    enduranceGrade: value as any,
-                  })
-                }
-              >
-                <Radio value="A" label="자세 안정, 흔들림 거의 없음" />
-                <Radio value="B" label="유지 가능하나 흔들림 있음" />
-                <Radio value="C" label="빠른 붕괴 / 중단" />
-              </RadioGroup>
-              {errors.enduranceGrade && (
-                <p className="mt-1 text-sm text-red-400">
-                  {errors.enduranceGrade}
+              {formData.cardioGrade === "B" && (
+                <div>
+                  <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                    회복 속도 (선택)
+                  </label>
+                  <div className="space-y-2">
+                    <Checkbox
+                      label="회복 빠름 (1분 이내 호흡 편안)"
+                      checked={formData.recoverySpeed.includes("fast")}
+                      onChange={(e) =>
+                        handleRecoverySpeedChange("fast", e.target.checked)
+                      }
+                    />
+                    <Checkbox
+                      label="회복 느림 (2분 이상 호흡 불편)"
+                      checked={formData.recoverySpeed.includes("slow")}
+                      onChange={(e) =>
+                        handleRecoverySpeedChange("slow", e.target.checked)
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* 3. 근지구력 */}
+          <Card
+            title="3. 근지구력"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  플랭크 수행 상태 <span className="text-red-400">*</span>
+                </label>
+                <RadioGroup
+                  name="enduranceGrade"
+                  value={formData.enduranceGrade}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      enduranceGrade: value as any,
+                    })
+                  }
+                >
+                  <Radio value="A" label="자세 안정, 흔들림 거의 없음" />
+                  <Radio value="B" label="유지 가능하나 흔들림 있음" />
+                  <Radio value="C" label="빠른 붕괴 / 중단" />
+                </RadioGroup>
+                {errors.enduranceGrade && (
+                  <p className="mt-1 text-sm text-red-400">
+                    {errors.enduranceGrade}
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* 4. 유연성 */}
+          <Card
+            title="4. 유연성"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
+              <p className="text-sm text-[#9ca3af] mb-4">
+                최소 1개 항목 이상 선택해주세요.{" "}
+                <span className="text-red-400">*</span>
+              </p>
+              {errors.flexibility && (
+                <p className="text-sm text-red-400 mb-2">
+                  {errors.flexibility}
                 </p>
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  좌전굴
+                </label>
+                <RadioGroup
+                  name="sitAndReach"
+                  value={formData.flexibilityItems.sitAndReach || ""}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      flexibilityItems: {
+                        ...formData.flexibilityItems,
+                        sitAndReach: value as any,
+                      },
+                    })
+                  }
+                >
+                  <Radio value="A" label="제한 없음" />
+                  <Radio value="B" label="일부 제한" />
+                  <Radio value="C" label="명확한 제한" />
+                </RadioGroup>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  어깨 가동
+                </label>
+                <RadioGroup
+                  name="shoulder"
+                  value={formData.flexibilityItems.shoulder || ""}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      flexibilityItems: {
+                        ...formData.flexibilityItems,
+                        shoulder: value as any,
+                      },
+                    })
+                  }
+                >
+                  <Radio value="A" label="제한 없음" />
+                  <Radio value="B" label="일부 제한" />
+                  <Radio value="C" label="명확한 제한" />
+                </RadioGroup>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  고관절 가동
+                </label>
+                <RadioGroup
+                  name="hip"
+                  value={formData.flexibilityItems.hip || ""}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      flexibilityItems: {
+                        ...formData.flexibilityItems,
+                        hip: value as any,
+                      },
+                    })
+                  }
+                >
+                  <Radio value="A" label="제한 없음" />
+                  <Radio value="B" label="일부 제한" />
+                  <Radio value="C" label="명확한 제한" />
+                </RadioGroup>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  햄스트링 (선택)
+                </label>
+                <RadioGroup
+                  name="hamstring"
+                  value={formData.flexibilityItems.hamstring || ""}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      flexibilityItems: {
+                        ...formData.flexibilityItems,
+                        hamstring: value as any,
+                      },
+                    })
+                  }
+                >
+                  <Radio value="A" label="제한 없음" />
+                  <Radio value="B" label="일부 제한" />
+                  <Radio value="C" label="명확한 제한" />
+                </RadioGroup>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        {/* 4. 유연성 */}
-        <Card title="4. 유연성" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <p className="text-sm text-[#9ca3af] mb-4">
-              최소 1개 항목 이상 선택해주세요.{" "}
-              <span className="text-red-400">*</span>
-            </p>
-            {errors.flexibility && (
-              <p className="text-sm text-red-400 mb-2">{errors.flexibility}</p>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                좌전굴
-              </label>
-              <RadioGroup
-                name="sitAndReach"
-                value={formData.flexibilityItems.sitAndReach || ""}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    flexibilityItems: {
-                      ...formData.flexibilityItems,
-                      sitAndReach: value as any,
-                    },
-                  })
-                }
-              >
-                <Radio value="A" label="제한 없음" />
-                <Radio value="B" label="일부 제한" />
-                <Radio value="C" label="명확한 제한" />
-              </RadioGroup>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                어깨 가동
-              </label>
-              <RadioGroup
-                name="shoulder"
-                value={formData.flexibilityItems.shoulder || ""}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    flexibilityItems: {
-                      ...formData.flexibilityItems,
-                      shoulder: value as any,
-                    },
-                  })
-                }
-              >
-                <Radio value="A" label="제한 없음" />
-                <Radio value="B" label="일부 제한" />
-                <Radio value="C" label="명확한 제한" />
-              </RadioGroup>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                고관절 가동
-              </label>
-              <RadioGroup
-                name="hip"
-                value={formData.flexibilityItems.hip || ""}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    flexibilityItems: {
-                      ...formData.flexibilityItems,
-                      hip: value as any,
-                    },
-                  })
-                }
-              >
-                <Radio value="A" label="제한 없음" />
-                <Radio value="B" label="일부 제한" />
-                <Radio value="C" label="명확한 제한" />
-              </RadioGroup>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                햄스트링 (선택)
-              </label>
-              <RadioGroup
-                name="hamstring"
-                value={formData.flexibilityItems.hamstring || ""}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    flexibilityItems: {
-                      ...formData.flexibilityItems,
-                      hamstring: value as any,
-                    },
-                  })
-                }
-              >
-                <Radio value="A" label="제한 없음" />
-                <Radio value="B" label="일부 제한" />
-                <Radio value="C" label="명확한 제한" />
-              </RadioGroup>
-            </div>
-          </div>
-        </Card>
-
-        {/* 5. 체성분 */}
-        <Card title="5. 체성분" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            {errors.bodyComposition && (
-              <p className="text-sm text-red-400">{errors.bodyComposition}</p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                type="number"
-                label="체중 (kg)"
-                value={formData.bodyWeightInput || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    bodyWeightInput: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-                required
-              />
-              <Input
-                type="number"
-                label="골격근량 (kg)"
-                value={formData.muscleMass || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    muscleMass: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-                required
-              />
-              <Input
-                type="number"
-                label="체지방량 (kg)"
-                value={formData.fatMass || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    fatMass: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-                required
-              />
-              <Input
-                type="number"
-                label="체지방률 (%)"
-                value={formData.bodyFatPercentage || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    bodyFatPercentage: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  })
-                }
-                step="0.1"
-                required
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* 6. 안정성 */}
-        <Card title="6. 안정성" className="bg-[#0f1115]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                OHSA 종합 <span className="text-red-400">*</span>
-              </label>
-              <RadioGroup
-                name="ohsa"
-                value={formData.ohsa}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    ohsa: value as any,
-                  })
-                }
-              >
-                <Radio value="A" label="보상 거의 없음" />
-                <Radio value="B" label="경미한 보상" />
-                <Radio value="C" label="명확한 보상" />
-              </RadioGroup>
-              {errors.ohsa && (
-                <p className="mt-1 text-sm text-red-400">{errors.ohsa}</p>
+          {/* 5. 체성분 */}
+          <Card
+            title="5. 체성분"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
+              {errors.bodyComposition && (
+                <p className="text-sm text-red-400">{errors.bodyComposition}</p>
               )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="체중 (kg)"
+                  value={formData.bodyWeightInput || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      bodyWeightInput: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  step="0.1"
+                  required
+                />
+                <Input
+                  type="number"
+                  label="골격근량 (kg)"
+                  value={formData.muscleMass || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      muscleMass: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  step="0.1"
+                  required
+                />
+                <Input
+                  type="number"
+                  label="체지방량 (kg)"
+                  value={formData.fatMass || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      fatMass: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  step="0.1"
+                  required
+                />
+                <Input
+                  type="number"
+                  label="체지방률 (%)"
+                  value={formData.bodyFatPercentage || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      bodyFatPercentage: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  step="0.1"
+                  required
+                />
+              </div>
             </div>
+          </Card>
 
-            <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
-                통증 체크 <span className="text-red-400">*</span>
-              </label>
-              <RadioGroup
-                name="pain"
-                value={formData.pain}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    pain: value as any,
-                  })
-                }
-              >
-                <Radio value="none" label="없음" />
-                <Radio value="present" label="있음" />
-              </RadioGroup>
-              {errors.pain && (
-                <p className="mt-1 text-sm text-red-400">{errors.pain}</p>
-              )}
+          {/* 6. 안정성 */}
+          <Card
+            title="6. 안정성"
+            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  OHSA 종합 <span className="text-red-400">*</span>
+                </label>
+                <RadioGroup
+                  name="ohsa"
+                  value={formData.ohsa}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      ohsa: value as any,
+                    })
+                  }
+                >
+                  <Radio value="A" label="보상 거의 없음" />
+                  <Radio value="B" label="경미한 보상" />
+                  <Radio value="C" label="명확한 보상" />
+                </RadioGroup>
+                {errors.ohsa && (
+                  <p className="mt-1 text-sm text-red-400">{errors.ohsa}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  통증 체크 <span className="text-red-400">*</span>
+                </label>
+                <RadioGroup
+                  name="pain"
+                  value={formData.pain}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      pain: value as any,
+                    })
+                  }
+                >
+                  <Radio value="none" label="없음" />
+                  <Radio value="present" label="있음" />
+                </RadioGroup>
+                {errors.pain && (
+                  <p className="mt-1 text-sm text-red-400">{errors.pain}</p>
+                )}
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        {/* 제출 버튼 */}
-        <div className="flex justify-end gap-3">
-          <Link href={`/dashboard/members/${memberId}`}>
-            <Button type="button" variant="outline" disabled={isSubmitting}>
-              취소
+          {/* 제출 버튼 */}
+          <div className="flex justify-end gap-3">
+            <Link href={`/dashboard/members/${memberId}`}>
+              <Button type="button" variant="outline" disabled={isSubmitting}>
+                취소
+              </Button>
+            </Link>
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? "저장 중..." : "평가 저장"}
             </Button>
-          </Link>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? "저장 중..." : "평가 저장"}
-          </Button>
-        </div>
-      </form>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

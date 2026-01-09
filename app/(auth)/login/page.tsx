@@ -68,8 +68,8 @@ function LoginForm() {
         }
       }
 
-      // 그 외의 경우 (ADMIN, MEMBER, 또는 승인된 TRAINER)는 일반 대시보드로
-      router.push("/dashboard/members");
+      // 그 외의 경우 (ADMIN, MEMBER, 또는 승인된 TRAINER)는 대시보드로
+      router.push("/dashboard");
     } catch (err) {
       setError(
         err instanceof Error

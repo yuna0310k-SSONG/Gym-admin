@@ -169,20 +169,36 @@ export default function NewMemberPage() {
   };
 
   return (
-    <div className="px-4 sm:px-6 py-4 sm:py-6">
-      <div className="mb-4 sm:mb-6">
-        <Link
-          href="/dashboard/members"
-          className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block"
-        >
-          ← 목록으로 돌아가기
-        </Link>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          새 회원 등록
-        </h1>
-        <p className="text-[#c9c7c7] mt-2 text-sm sm:text-base">
-          회원 기본 정보를 등록합니다.
-        </p>
+    <div className="relative px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
+      {/* 애니메이션 배경 그라데이션 */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+      </div>
+
+      <div className="relative mb-4 sm:mb-6">
+        <div className="relative group">
+          {/* 애니메이션 그라데이션 바 */}
+          <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
+          <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
+
+          <Link
+            href="/dashboard/members"
+            className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
+          >
+            ← 목록으로 돌아가기
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
+            새 회원 등록
+          </h1>
+          <p className="text-[#c9c7c7] mt-2 text-sm sm:text-base pl-4">
+            회원 기본 정보를 등록합니다.
+          </p>
+        </div>
       </div>
       <div className="max-w-4xl">
         {errorMessage && (
