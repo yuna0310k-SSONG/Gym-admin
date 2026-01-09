@@ -19,17 +19,14 @@ export default function BulkActionsBar({
   onClearSelection,
   isProcessing = false,
 }: BulkActionsBarProps) {
-  const [showStatusSelect, setShowStatusSelect] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
 
   if (selectedCount === 0) return null;
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-    if (status && status !== "") {
-      onBulkStatusChange(status as "ACTIVE" | "INACTIVE" | "SUSPENDED");
+  const handleApply = () => {
+    if (selectedStatus && selectedStatus !== "") {
+      onBulkStatusChange(selectedStatus as "ACTIVE" | "INACTIVE" | "SUSPENDED");
       setSelectedStatus("");
-      setShowStatusSelect(false);
     }
   };
 
@@ -42,15 +39,25 @@ export default function BulkActionsBar({
         <div className="flex items-center gap-2">
           <Select
             value={selectedStatus}
-            onChange={(e) => handleStatusChange(e.target.value)}
+            onChange={(e) => setSelectedStatus(e.target.value)}
             options={[
-              { value: "", label: "상태 변경" },
-              { value: "ACTIVE", label: "활성으로 변경" },
-              { value: "INACTIVE", label: "비활성으로 변경" },
-              { value: "SUSPENDED", label: "정지로 변경" },
+              { value: "", label: "상태 선택" },
+              { value: "ACTIVE", label: "활성" },
+              { value: "INACTIVE", label: "비활성" },
+              { value: "SUSPENDED", label: "정지" },
             ]}
-            className="w-40"
+            className="w-32"
           />
+          {selectedStatus && selectedStatus !== "" && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleApply}
+              disabled={isProcessing}
+            >
+              적용
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
