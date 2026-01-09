@@ -17,6 +17,7 @@ import WorkoutCalendar from "@/components/members/WorkoutCalendar";
 import WorkoutVolumeAnalysis from "@/components/members/WorkoutVolumeAnalysis";
 import type { Member } from "@/types/api/responses";
 import { memberApi } from "@/lib/api/members";
+import { assessmentApi } from "@/lib/api/assessments";
 
 export default function MemberDetailPage() {
   const params = useParams();
@@ -26,6 +27,8 @@ export default function MemberDetailPage() {
   const [activeTab, setActiveTab] = useState("abilities");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showInitialAssessmentAlert, setShowInitialAssessmentAlert] = useState(false);
+  const [hasInitialAssessment, setHasInitialAssessment] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchMember = async () => {
@@ -44,6 +47,26 @@ export default function MemberDetailPage() {
         }
 
         setMember(data);
+
+        // 초기 평가 확인
+        try {
+          const assessments = await assessmentApi.getAssessments(params.id as string);
+          const initialAssessment = assessments.assessments.find(
+            (assessment) => assessment.assessmentType === "INITIAL" || assessment.isInitial
+          );
+          const hasInitial = !!initialAssessment;
+          setHasInitialAssessment(hasInitial);
+          
+          // 초기 평가가 없으면 알림 표시
+          if (!hasInitial) {
+            setShowInitialAssessmentAlert(true);
+          }
+        } catch (error) {
+          console.error("평가 목록 조회 실패:", error);
+          // 평가 목록 조회 실패 시 초기 평가가 없는 것으로 간주
+          setHasInitialAssessment(false);
+          setShowInitialAssessmentAlert(true);
+        }
       } catch (error) {
         console.error("회원 조회 실패:", error);
         setMember(null);
@@ -160,9 +183,11 @@ export default function MemberDetailPage() {
           </h1>
         </div>
         <div className="flex space-x-3">
-          <Link href={`/dashboard/members/${member.id}/assessment/new`}>
-            <Button variant="secondary">초기 평가</Button>
-          </Link>
+          {hasInitialAssessment === false && (
+            <Link href={`/dashboard/members/${member.id}/assessment/new`}>
+              <Button variant="secondary">초기 평가</Button>
+            </Link>
+          )}
           <Link href={`/dashboard/members/${member.id}/edit`}>
             <Button variant="primary">수정</Button>
           </Link>
@@ -200,6 +225,63 @@ export default function MemberDetailPage() {
           <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
         </Card>
       </section>
+
+      {/* 초기 평가 등록 알림 모달 */}
+      {showInitialAssessmentAlert && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          onClick={(e) => {
+            // 배경 클릭 시 모달 닫기
+            if (e.target === e.currentTarget) {
+              setShowInitialAssessmentAlert(false);
+            }
+          }}
+        >
+          <div
+            className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-yellow-500/30"
+            onClick={(e) => {
+              // 모달 컨텐츠 클릭 시 이벤트 전파 방지
+              e.stopPropagation();
+            }}
+          >
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-yellow-400 mb-2">
+                초기 평가 등록 필요
+              </h3>
+              <p className="text-[#c9c7c7] text-sm">
+                해당 회원의 초기 평가가 등록되지 않았습니다.
+                <br />
+                초기 평가를 등록해주세요!
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowInitialAssessmentAlert(false);
+                }}
+                type="button"
+              >
+                다음에
+              </Button>
+              <Button
+                variant="primary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowInitialAssessmentAlert(false);
+                  router.push(`/dashboard/members/${member.id}/assessment/new`);
+                }}
+                type="button"
+              >
+                확인
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 삭제 확인 모달 */}
       {showDeleteConfirm && (

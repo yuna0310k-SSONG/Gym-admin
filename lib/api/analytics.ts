@@ -27,10 +27,16 @@ export const analyticsApi = {
     throw new Error("Failed to fetch averages");
   },
 
-  async getComparison(memberId: string): Promise<MemberComparisonResponse> {
-    const response = await apiClient.get<ApiResponse<MemberComparisonResponse>>(
+  async getComparison(memberId: string): Promise<MemberComparisonResponse | null> {
+    const response = await apiClient.get<ApiResponse<MemberComparisonResponse> | null>(
       `/api/analytics/comparison/${memberId}`
     );
+    
+    // 404 에러 발생 시 null 반환 (선택적 엔드포인트)
+    if (response === null) {
+      return null;
+    }
+    
     if ("data" in response) {
       return response.data;
     }

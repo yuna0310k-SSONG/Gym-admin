@@ -10,11 +10,14 @@ import RadioGroup from "@/components/ui/RadioGroup";
 import Checkbox from "@/components/ui/Checkbox";
 import Card from "@/components/ui/Card";
 import { assessmentApi } from "@/lib/api/assessments";
+import { memberApi } from "@/lib/api/members";
 import type { CreateAssessmentRequest } from "@/types/api/requests";
+import type { Member } from "@/types/api/responses";
 import { useToast } from "@/providers/ToastProvider";
 
 interface AssessmentFormData {
   assessedAt: string;
+  height?: number;
   bodyWeight?: number;
   condition?: "EXCELLENT" | "GOOD" | "NORMAL" | "POOR";
   trainerComment?: string;
@@ -69,6 +72,46 @@ export default function NewInitialAssessmentPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [member, setMember] = useState<Member | null>(null);
+
+  // 회원 정보 가져오기
+  useEffect(() => {
+    const fetchMember = async () => {
+      if (!memberId) return;
+
+      try {
+        const memberData = await memberApi.getMember(memberId);
+        setMember(memberData);
+
+        // 회원의 키와 몸무게가 있으면 자동으로 채우기
+        setFormData((prev) => {
+          const updates: Partial<AssessmentFormData> = {};
+
+          if (
+            memberData.height !== undefined &&
+            memberData.height !== null &&
+            !isNaN(memberData.height)
+          ) {
+            updates.height = memberData.height;
+          }
+
+          if (
+            memberData.weight !== undefined &&
+            memberData.weight !== null &&
+            !isNaN(memberData.weight)
+          ) {
+            updates.bodyWeight = memberData.weight;
+          }
+
+          return { ...prev, ...updates };
+        });
+      } catch (error) {
+        console.error("회원 정보 조회 실패:", error);
+      }
+    };
+
+    fetchMember();
+  }, [memberId]);
 
   // 기본 정보의 체중이 변경되면 체성분의 체중에 자동으로 채우기
   useEffect(() => {
@@ -349,12 +392,48 @@ export default function NewInitialAssessmentPage() {
           ← 회원 상세로 돌아가기
         </Link>
         <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          초기 평가 생성
+          {member ? `${member.name}님 초기 평가 생성` : "초기 평가 생성"}
         </h1>
         <p className="text-[#9ca3af] mt-2">
           회원의 초기 평가를 진행합니다. 모든 항목을 입력해주세요.
         </p>
       </div>
+
+      {/* 회원 정보 */}
+      {member && (
+        <Card className="bg-[#0f1115] mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium text-[#9ca3af]">이름</label>
+              <p className="mt-1 text-[#e5e7eb]">{member.name}</p>
+            </div>
+            {member.birthDate && (
+              <div>
+                <label className="text-sm font-medium text-[#9ca3af]">
+                  생년월일
+                </label>
+                <p className="mt-1 text-[#e5e7eb]">
+                  {new Date(member.birthDate).toLocaleDateString("ko-KR")}
+                </p>
+              </div>
+            )}
+            {member.height !== undefined && member.height !== null && (
+              <div>
+                <label className="text-sm font-medium text-[#9ca3af]">키</label>
+                <p className="mt-1 text-[#e5e7eb]">{member.height} cm</p>
+              </div>
+            )}
+            {member.weight !== undefined && member.weight !== null && (
+              <div>
+                <label className="text-sm font-medium text-[#9ca3af]">
+                  몸무게
+                </label>
+                <p className="mt-1 text-[#e5e7eb]">{member.weight} kg</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 기본 정보 */}
@@ -374,6 +453,20 @@ export default function NewInitialAssessmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 type="number"
+                label="키 (cm)"
+                value={formData.height || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    height: e.target.value
+                      ? parseFloat(e.target.value)
+                      : undefined,
+                  })
+                }
+                step="0.1"
+              />
+              <Input
+                type="number"
                 label="체중 (kg)"
                 value={formData.bodyWeight || ""}
                 onChange={(e) =>
@@ -386,7 +479,9 @@ export default function NewInitialAssessmentPage() {
                 }
                 step="0.1"
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#c9c7c7] mb-1">
                   컨디션
@@ -408,16 +503,15 @@ export default function NewInitialAssessmentPage() {
                   <option value="POOR">나쁨</option>
                 </select>
               </div>
+              <Input
+                label="트레이너 코멘트"
+                value={formData.trainerComment || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, trainerComment: e.target.value })
+                }
+                placeholder="평가 시 관찰한 내용을 기록해주세요."
+              />
             </div>
-
-            <Input
-              label="트레이너 코멘트"
-              value={formData.trainerComment || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, trainerComment: e.target.value })
-              }
-              placeholder="평가 시 관찰한 내용을 기록해주세요."
-            />
           </div>
         </Card>
 
