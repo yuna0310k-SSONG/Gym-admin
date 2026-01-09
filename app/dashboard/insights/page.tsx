@@ -28,6 +28,15 @@ export default function InsightsPage() {
     isLoading: hexagonLoading,
     error: hexagonError,
   } = useHexagonInsights();
+
+  // 디버깅: hexagonData 확인
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Insights] hexagonData:", hexagonData);
+      console.log("[Insights] hexagonLoading:", hexagonLoading);
+      console.log("[Insights] hexagonError:", hexagonError);
+    }
+  }, [hexagonData, hexagonLoading, hexagonError]);
   const {
     data: weeklyData,
     isLoading: weeklyLoading,
@@ -235,9 +244,12 @@ export default function InsightsPage() {
           </Card>
         ) : hexagonError ? (
           <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-[400px]">
-              <p className="text-red-400">
+            <div className="flex flex-col items-center justify-center h-[400px]">
+              <p className="text-red-400 mb-2">
                 데이터를 불러오는 중 오류가 발생했습니다.
+              </p>
+              <p className="text-[#9ca3af] text-sm">
+                {hexagonError.message || "헥사곤 데이터를 불러올 수 없습니다."}
               </p>
             </div>
           </Card>
@@ -247,7 +259,23 @@ export default function InsightsPage() {
             title="운영 능력치 헥사곤 (전체 회원 평균)"
             isAverage={true}
           />
-        ) : null}
+        ) : (
+          <Card className="bg-[#0f1115]">
+            <div className="flex flex-col items-center justify-center h-[400px]">
+              <p className="text-[#9ca3af] mb-2">
+                헥사곤 데이터를 사용할 수 없습니다.
+              </p>
+              <p className="text-[#6b7280] text-sm">
+                백엔드 API가 아직 구현되지 않았거나 데이터가 없습니다.
+              </p>
+              {process.env.NODE_ENV === "development" && (
+                <p className="text-[#6b7280] text-xs mt-2">
+                  Debug: hexagonData = {JSON.stringify(hexagonData)}
+                </p>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* 이번 주 vs 지난 주 비교 */}
@@ -260,9 +288,12 @@ export default function InsightsPage() {
           </Card>
         ) : weeklyError ? (
           <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-red-400">
+            <div className="flex flex-col items-center justify-center h-64">
+              <p className="text-red-400 mb-2">
                 데이터를 불러오는 중 오류가 발생했습니다.
+              </p>
+              <p className="text-[#9ca3af] text-sm">
+                {weeklyError.message || "주간 요약 데이터를 불러올 수 없습니다."}
               </p>
             </div>
           </Card>
@@ -403,7 +434,18 @@ export default function InsightsPage() {
               </div>
             </div>
           </Card>
-        ) : null}
+        ) : (
+          <Card className="bg-[#0f1115]">
+            <div className="flex flex-col items-center justify-center h-64">
+              <p className="text-[#9ca3af] mb-2">
+                주간 요약 데이터를 사용할 수 없습니다.
+              </p>
+              <p className="text-[#6b7280] text-sm">
+                백엔드 API가 아직 구현되지 않았거나 데이터가 없습니다.
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* 위험 신호 회원 리스트 */}
@@ -416,9 +458,12 @@ export default function InsightsPage() {
           </Card>
         ) : riskError ? (
           <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-red-400">
+            <div className="flex flex-col items-center justify-center h-64">
+              <p className="text-red-400 mb-2">
                 데이터를 불러오는 중 오류가 발생했습니다.
+              </p>
+              <p className="text-[#9ca3af] text-sm">
+                {riskError.message || "위험 회원 데이터를 불러올 수 없습니다."}
               </p>
             </div>
           </Card>
@@ -455,7 +500,18 @@ export default function InsightsPage() {
               <RiskMemberTable members={riskData.members} />
             )}
           </Card>
-        ) : null}
+        ) : (
+          <Card className="bg-[#0f1115]">
+            <div className="flex flex-col items-center justify-center h-64">
+              <p className="text-[#9ca3af] mb-2">
+                위험 회원 데이터를 사용할 수 없습니다.
+              </p>
+              <p className="text-[#6b7280] text-sm">
+                백엔드 API가 아직 구현되지 않았거나 데이터가 없습니다.
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

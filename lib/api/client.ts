@@ -75,13 +75,14 @@ export const apiClient = {
           errorData?.message ||
           "요청한 API 엔드포인트를 찾을 수 없습니다. 백엔드 API가 아직 구현되지 않았을 수 있습니다.";
         
-        // 일부 엔드포인트는 404가 정상적인 경우임 (예: hexagon, compare, goals, analytics/comparison)
+        // 일부 엔드포인트는 404가 정상적인 경우임 (예: hexagon, compare, goals, analytics/comparison, insights)
         // 이런 경우는 조용히 처리하고 null 반환 (에러 throw 하지 않음)
         const isOptionalEndpoint =
           endpoint.includes("/abilities/hexagon") ||
           endpoint.includes("/abilities/compare") ||
           endpoint.includes("/goals") ||
-          endpoint.includes("/analytics/comparison");
+          endpoint.includes("/analytics/comparison") ||
+          endpoint.includes("/insights/");
         
         if (isOptionalEndpoint) {
           // 개발 환경에서만 경고 표시

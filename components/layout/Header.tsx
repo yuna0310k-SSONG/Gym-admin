@@ -71,7 +71,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </button>
 
               <Link
-                href="/dashboard/members"
+                href="/dashboard"
                 className="text-xl font-bold text-[#f9fafb]"
               >
                 헬스장 회원관리

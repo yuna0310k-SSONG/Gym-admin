@@ -3,297 +3,420 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
-import AbilityHexagon from "@/components/health/AbilityHexagon";
-import RiskMemberTable from "@/components/members/RiskMemberTable";
-import Button from "@/components/ui/Button";
-import {
-  useHexagonInsights,
-  useWeeklySummary,
-  useRiskMembers,
-} from "@/lib/hooks/useInsights";
+import QuickActionButton from "@/components/dashboard/QuickActionButton";
+import RecentActivityFeed, {
+  type ActivityItem,
+} from "@/components/dashboard/RecentActivityFeed";
+import StatisticsCards, {
+  type DashboardStats,
+} from "@/components/dashboard/StatisticsCards";
+import QuickMemberList from "@/components/dashboard/QuickMemberList";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { trainerApi } from "@/lib/api/trainers";
+import { memberApi } from "@/lib/api/members";
+import { assessmentApi } from "@/lib/api/assessments";
+import { insightApi } from "@/lib/api/insights";
+import type { Member } from "@/types/api/responses";
+
+/* =========================
+   서브 컴포넌트
+========================= */
+
+function WeeklyTrend({
+  newMembers,
+  assessments,
+}: {
+  newMembers: number;
+  assessments: number;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/5 border border-green-500/20 hover:border-green-500/30 transition-all">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+            <svg
+              className="w-4 h-4 text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm text-gray-300">이번 주 신규 회원</span>
+        </div>
+        <span className="text-lg font-bold text-green-400">+{newMembers}</span>
+      </div>
+      <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-500/10 to-cyan-500/5 border border-blue-500/20 hover:border-blue-500/30 transition-all">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+            <svg
+              className="w-4 h-4 text-blue-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm text-gray-300">평가 등록</span>
+        </div>
+        <span className="text-lg font-bold text-blue-400">+{assessments}</span>
+      </div>
+    </div>
+  );
+}
+
+function ActionRequiredMembers({ members }: { members: Member[] }) {
+  if (members.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-sm text-gray-500">
+          현재 조치가 필요한 회원이 없습니다.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="space-y-2">
+      {members.map((m) => (
+        <li
+          key={m.id}
+          className="flex items-center justify-between px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20"
+        >
+          <span className="text-sm text-white">{m.name}</span>
+          <Link
+            href={`/dashboard/members/${m.id}`}
+            className="text-xs text-red-400 hover:underline"
+          >
+            확인
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function PendingAssessments({ count }: { count: number }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full space-y-2">
+      <p className="text-3xl font-bold text-yellow-400">{count}</p>
+      <p className="text-sm text-gray-400">초기 평가 미완료 회원</p>
+      <Link
+        href="/dashboard/members"
+        className="text-xs text-blue-400 hover:underline"
+      >
+        바로가기 →
+      </Link>
+    </div>
+  );
+}
+
+/* =========================
+   메인 페이지
+========================= */
 
 export default function DashboardPage() {
   const { user } = useAuth();
+
   const [pendingTrainerCount, setPendingTrainerCount] = useState(0);
-  const {
-    data: hexagonData,
-    isLoading: hexagonLoading,
-    error: hexagonError,
-  } = useHexagonInsights();
-  const {
-    data: weeklyData,
-    isLoading: weeklyLoading,
-    error: weeklyError,
-  } = useWeeklySummary();
-  const {
-    data: riskData,
-    isLoading: riskLoading,
-    error: riskError,
-  } = useRiskMembers();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalMembers: 0,
+    activeMembers: 0,
+    pendingInitialAssessments: 0,
+    riskMembers: 0,
+  });
 
-  // 점수 포맷팅 유틸 (값이 없으면 0.0으로 표시)
-  const formatScore = (value: number | null | undefined) =>
-    (value ?? 0).toFixed(1);
+  const [todaySummary, setTodaySummary] = useState({
+    newMembers: 0,
+    assessments: 0,
+    deletions: 0,
+  });
 
-  // Admin인 경우 승인 대기 트레이너 수 조회
+  const [loading, setLoading] = useState(true);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  /* =========================
+     데이터 로딩
+  ========================= */
+
+  // 현재 날짜/시간 업데이트 (1초마다)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (user?.role === "ADMIN") {
-      const fetchPendingCount = async () => {
-        try {
-          const data = await trainerApi.getPendingTrainers();
-
-          // 디버깅용 로그
-          if (process.env.NODE_ENV === "development") {
-            console.log("[Dashboard Page] Pending trainers data:", data);
-          }
-
-          // 안전하게 처리: total이 없으면 trainers 배열 길이 사용, 그것도 없으면 0
-          const count = data?.total ?? data?.trainers?.length ?? 0;
-          setPendingTrainerCount(count);
-        } catch (error) {
-          console.error("승인 대기 트레이너 수 조회 실패:", error);
-          setPendingTrainerCount(0); // 에러 발생 시 0으로 설정
-        }
-      };
-      fetchPendingCount();
+      trainerApi
+        .getPendingTrainers()
+        .then((res) =>
+          setPendingTrainerCount(res?.total ?? res?.trainers?.length ?? 0)
+        )
+        .catch(() => setPendingTrainerCount(0));
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+
+      const membersData = await memberApi.getMembers(1, 100);
+      setMembers(membersData.members);
+
+      const activeMembers = membersData.members.filter(
+        (m) => m.status === "ACTIVE"
+      ).length;
+
+      const assessmentFlags = await Promise.all(
+        membersData.members.map(async (m) => {
+          try {
+            const res = await assessmentApi.getAssessments(m.id);
+            return res.assessments.some((a) => a.isInitial);
+          } catch {
+            return false;
+          }
+        })
+      );
+
+      const pendingInitialAssessments = assessmentFlags.filter(
+        (v) => !v
+      ).length;
+
+      const riskMembers =
+        (await insightApi.getRiskMembers().catch(() => ({ total: 0 })))
+          ?.total ?? 0;
+
+      setStats({
+        totalMembers: membersData.total,
+        activeMembers,
+        pendingInitialAssessments,
+        riskMembers,
+      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todayNewMembers = membersData.members.filter((m) => {
+        const d = new Date(m.createdAt);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime();
+      }).length;
+
+      setTodaySummary({
+        newMembers: todayNewMembers,
+        assessments: 0,
+        deletions: 0,
+      });
+
+      const activities: ActivityItem[] = membersData.members
+        .slice(0, 10)
+        .map((m) => ({
+          id: `member-${m.id}`,
+          type: "MEMBER_REGISTERED",
+          memberId: m.id,
+          memberName: m.name,
+          description: `${m.name}님이 회원으로 등록되었습니다`,
+          timestamp: m.createdAt,
+          link: `/dashboard/members/${m.id}`,
+        }));
+
+      setRecentActivities(
+        activities.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
+      );
+
+      setLoading(false);
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const actionRequiredMembers =
+    stats.pendingInitialAssessments > 0 ? members.slice(0, 5) : [];
+
+  /* =========================
+     UI
+  ========================= */
+
+  // 날짜/시간 포맷팅
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    });
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">대시보드</h1>
-        {user?.role === "ADMIN" && (
-          <Link href="/dashboard/trainers" className="w-full sm:w-auto">
-            <Button variant="primary" className="w-full sm:w-auto">
-              트레이너 관리
-              {pendingTrainerCount > 0 && ` (${pendingTrainerCount}명 대기)`}
-            </Button>
-          </Link>
-        )}
+    <div className="relative px-4 sm:px-6 py-3 min-h-screen overflow-hidden">
+      {/* 애니메이션 배경 그라데이션 */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
+        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        ></div>
       </div>
 
-      {/* Admin 전용: 트레이너 관리 알림 */}
-      {user?.role === "ADMIN" && pendingTrainerCount > 0 && (
-        <Card className="bg-yellow-500/10 border-yellow-500/20">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-yellow-400 mb-1">
-                승인 대기 중인 트레이너가 있습니다
-              </h3>
-              <p className="text-[#9ca3af] text-sm">
-                {pendingTrainerCount}명의 트레이너가 승인을 기다리고 있습니다.
-              </p>
+      {/* 헤더 */}
+      <div className="relative mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="relative group">
+            {/* 애니메이션 그라데이션 바 */}
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
+            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
+
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-3 pl-4 drop-shadow-lg">
+              대시보드
+            </h1>
+            <div className="flex items-center gap-4 pl-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
+                  <svg
+                    className="relative w-5 h-5 text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-[#c9c7c7] text-sm font-medium">
+                  {formatDate(currentDateTime)}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-[#374151]"></div>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full"></div>
+                  <svg
+                    className="relative w-5 h-5 text-green-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <span className="font-mono text-green-400 font-semibold text-sm tracking-tight">
+                  {formatTime(currentDateTime)}
+                </span>
+              </div>
             </div>
-            <Link href="/dashboard/trainers" className="w-full sm:w-auto">
-              <Button variant="primary" className="w-full sm:w-auto">트레이너 관리하러 가기</Button>
+          </div>
+          {user?.role === "ADMIN" && pendingTrainerCount > 0 && (
+            <Link href="/dashboard/trainers">
+              <div className="px-5 py-3 rounded-xl border border-yellow-500/40 bg-gradient-to-r from-yellow-500/20 via-orange-500/15 to-yellow-500/20 text-sm text-yellow-300 hover:from-yellow-500/30 hover:via-orange-500/25 hover:to-yellow-500/30 transition-all duration-300 shadow-xl shadow-yellow-500/20 hover:shadow-yellow-500/30 hover:scale-105 backdrop-blur-sm">
+                <span className="flex items-center gap-2 font-semibold">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400"></span>
+                  </span>
+                  승인 대기 {pendingTrainerCount}명
+                </span>
+              </div>
             </Link>
+          )}
+        </div>
+      </div>
+
+      {/* KPI + 트렌드 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="lg:col-span-2">
+          <StatisticsCards stats={stats} isLoading={loading} />
+        </div>
+        <Card
+          title="이번 주 요약"
+          className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
+        >
+          <WeeklyTrend newMembers={3} assessments={2} />
+        </Card>
+      </div>
+
+      {/* 액션 / 회원 / 평가 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch mb-4">
+        <Card
+          title="⚠️ 액션 필요 회원"
+          className="bg-gradient-to-br from-[#0f1115] via-[#1a0f15] to-[#0f1115] border-red-500/30 h-full shadow-2xl shadow-red-500/10 hover:shadow-red-500/20 transition-all duration-300 hover:border-red-500/40 backdrop-blur-sm"
+        >
+          <div className="flex flex-col h-full">
+            <ActionRequiredMembers members={actionRequiredMembers} />
           </div>
         </Card>
-      )}
 
-      {/* 운영 능력치 헥사곤 */}
-      <div className="mb-6">
-        {hexagonLoading ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-[400px]">
-              <p className="text-[#c9c7c7]">로딩 중...</p>
-            </div>
-          </Card>
-        ) : hexagonError ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-[400px]">
-              <p className="text-red-400">
-                데이터를 불러오는 중 오류가 발생했습니다.
-              </p>
-            </div>
-          </Card>
-        ) : hexagonData ? (
-          <AbilityHexagon
-            data={hexagonData}
-            title="운영 능력치 헥사곤 (전체 회원 평균)"
-            isAverage={true}
-          />
-        ) : null}
+        <Card
+          title="회원 관리"
+          className="bg-gradient-to-br from-[#0f1115] via-[#0f151a] to-[#0f1115] border-blue-500/30 h-full shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:border-blue-500/40 backdrop-blur-sm"
+        >
+          <div className="flex flex-col h-full">
+            <QuickMemberList
+              members={members.slice(0, 10)}
+              isLoading={loading}
+            />
+          </div>
+        </Card>
+
+        <Card
+          title="📋 평가 미완료"
+          className="bg-gradient-to-br from-[#0f1115] via-[#15150f] to-[#0f1115] border-yellow-500/30 h-full shadow-2xl shadow-yellow-500/10 hover:shadow-yellow-500/20 transition-all duration-300 hover:border-yellow-500/40 backdrop-blur-sm"
+        >
+          <PendingAssessments count={stats.pendingInitialAssessments} />
+        </Card>
       </div>
 
-      {/* 이번 주 vs 지난 주 비교 카드 */}
-      <div className="mb-6">
-        {weeklyLoading ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-[#c9c7c7]">로딩 중...</p>
-            </div>
-          </Card>
-        ) : weeklyError ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-red-400">
-                데이터를 불러오는 중 오류가 발생했습니다.
-              </p>
-            </div>
-          </Card>
-        ) : weeklyData ? (
-          <Card title="이번 주 vs 지난 주 비교" className="bg-[#0f1115]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  이번 주
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">하체 근력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.strength)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">심폐 지구력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.cardio)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">근지구력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.endurance)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">유연성:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.flexibility)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">체성분 밸런스:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.body)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">부상 안정성:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.thisWeek?.stability)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  지난 주
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">하체 근력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.strength)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">심폐 지구력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.cardio)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">근지구력:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.endurance)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">유연성:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.flexibility)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">체성분 밸런스:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.body)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#c9c7c7]">부상 안정성:</span>
-                    <span className="text-white font-semibold">
-                      {formatScore(weeklyData.lastWeek?.stability)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <h3 className="text-base sm:text-lg font-semibold text-white mb-4">
-                주간 변화
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                {Object.entries(weeklyData.changes || {}).map(
-                  ([key, value]) => {
-                    const labels: Record<string, string> = {
-                      strength: "하체 근력",
-                      cardio: "심폐 지구력",
-                      endurance: "근지구력",
-                      flexibility: "유연성",
-                      body: "체성분 밸런스",
-                      stability: "부상 안정성",
-                    };
-                    const numericValue =
-                      typeof value === "number" ? value : Number(value ?? 0);
-                    const isPositive = numericValue >= 0;
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-[#c9c7c7] text-sm">
-                          {labels[key]}:
-                        </span>
-                        <span
-                          className={`font-semibold text-sm ${
-                            isPositive ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          {isPositive ? "+" : ""}
-                          {numericValue.toFixed(1)}
-                        </span>
-                      </div>
-                    );
-                  }
-                )}
-              </div>
-            </div>
-          </Card>
-        ) : null}
-      </div>
+      <Card
+        title="최근 활동"
+        className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
+      >
+        <RecentActivityFeed activities={recentActivities} isLoading={loading} />
+      </Card>
 
-      {/* 위험 신호 회원 리스트 */}
-      <div>
-        {riskLoading ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-[#c9c7c7]">로딩 중...</p>
-            </div>
-          </Card>
-        ) : riskError ? (
-          <Card className="bg-[#0f1115]">
-            <div className="flex items-center justify-center h-64">
-              <p className="text-red-400">
-                데이터를 불러오는 중 오류가 발생했습니다.
-              </p>
-            </div>
-          </Card>
-        ) : riskData ? (
-          <Card
-            title={`위험 신호 회원 (${riskData.total}명)`}
-            className="bg-[#0f1115]"
-          >
-            <RiskMemberTable members={riskData.members} />
-          </Card>
-        ) : null}
-      </div>
+      <QuickActionButton />
     </div>
   );
 }
