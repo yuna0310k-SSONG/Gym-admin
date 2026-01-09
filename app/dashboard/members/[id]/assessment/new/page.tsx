@@ -215,8 +215,8 @@ export default function NewInitialAssessmentPage() {
         category: "STABILITY",
         name: "OHSA",
         details: {
-          ohsa: formData.ohsa,
-          pain: formData.pain,
+          ohsa: formData.ohsa === "" ? undefined : (formData.ohsa as "A" | "B" | "C" | undefined),
+          pain: formData.pain === "" ? undefined : (formData.pain as "none" | "present" | undefined),
         },
       });
 
