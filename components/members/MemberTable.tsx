@@ -19,6 +19,7 @@ interface MemberTableProps {
   onSort?: (field: "name" | "joinDate" | "status") => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
+  startIndex?: number; // 페이지네이션을 위한 시작 번호
 }
 
 export default function MemberTable({
@@ -28,6 +29,7 @@ export default function MemberTable({
   onSort,
   selectedIds = [],
   onSelectionChange,
+  startIndex = 0,
 }: MemberTableProps) {
   const router = useRouter();
 
@@ -56,8 +58,10 @@ export default function MemberTable({
     }
   };
 
-  const allSelected = members.length > 0 && selectedIds.length === members.length;
-  const someSelected = selectedIds.length > 0 && selectedIds.length < members.length;
+  const allSelected =
+    members.length > 0 && selectedIds.length === members.length;
+  const someSelected =
+    selectedIds.length > 0 && selectedIds.length < members.length;
 
   const getStatusBadge = (status: Member["status"]) => {
     const statusMap = {
@@ -96,7 +100,7 @@ export default function MemberTable({
       );
     }
     return (
-      <span className="ml-1 text-blue-400 text-xs">
+      <span className="ml-1 text-[#e5e7eb] text-xs">
         {sortOrder === "asc" ? "↑" : "↓"}
       </span>
     );
@@ -119,6 +123,7 @@ export default function MemberTable({
             />
           </TableHeaderCell>
         )}
+        <TableHeaderCell className="w-16 text-center">No.</TableHeaderCell>
         <TableHeaderCell
           className="cursor-pointer select-none hover:text-white"
           onClick={() => handleSort("name")}
@@ -141,8 +146,9 @@ export default function MemberTable({
         </TableHeaderCell>
       </TableHeader>
       <tbody className="bg-[#0f1115] divide-y divide-[#374151]">
-        {members.map((member) => {
+        {members.map((member, index) => {
           const isSelected = selectedIds.includes(member.id);
+          const rowNumber = startIndex + index + 1;
           return (
             <TableRow
               key={member.id}
@@ -167,16 +173,19 @@ export default function MemberTable({
                   />
                 </TableCell>
               )}
+              <TableCell className="text-center text-[#9ca3af]">
+                {rowNumber}
+              </TableCell>
               <TableCell className="text-[#e5e7eb]">{member.name}</TableCell>
-            <TableCell className="text-[#9ca3af]">{member.email}</TableCell>
-            <TableCell className="text-[#9ca3af]">
-              {formatPhoneNumberKR(member.phone)}
-            </TableCell>
-            <TableCell className="text-[#9ca3af]">
-              {new Date(member.joinDate).toLocaleDateString("ko-KR")}
-            </TableCell>
-            <TableCell>{getStatusBadge(member.status)}</TableCell>
-          </TableRow>
+              <TableCell className="text-[#9ca3af]">{member.email}</TableCell>
+              <TableCell className="text-[#9ca3af]">
+                {formatPhoneNumberKR(member.phone)}
+              </TableCell>
+              <TableCell className="text-[#9ca3af]">
+                {new Date(member.joinDate).toLocaleDateString("ko-KR")}
+              </TableCell>
+              <TableCell>{getStatusBadge(member.status)}</TableCell>
+            </TableRow>
           );
         })}
       </tbody>

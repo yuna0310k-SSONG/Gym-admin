@@ -42,6 +42,14 @@ export default function MemberProfile({ member }: MemberProfileProps) {
               {new Date(member.joinDate).toLocaleDateString("ko-KR")}
             </p>
           </div>
+          {member.birthDate && (
+            <div>
+              <label className="text-sm font-medium text-[#9ca3af]">생년월일</label>
+              <p className="mt-1 text-[#e5e7eb]">
+                {new Date(member.birthDate).toLocaleDateString("ko-KR")}
+              </p>
+            </div>
+          )}
           {member.height && (
             <div>
               <label className="text-sm font-medium text-[#9ca3af]">키</label>

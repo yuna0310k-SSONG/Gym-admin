@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import React from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -113,6 +114,35 @@ export default function NewMemberForm({
   });
 
   const assessmentData = watch("initialAssessment");
+  const weight = watch("weight");
+  const bodyWeightInput = watch("initialAssessment.bodyWeightInput");
+  const muscleMass = watch("initialAssessment.muscleMass");
+  const fatMass = watch("initialAssessment.fatMass");
+
+  // 신체정보의 몸무게가 변경되면 초기 평가의 체중과 체성분 체중에 자동으로 채우기
+  React.useEffect(() => {
+    if (weight !== undefined && weight !== null && !isNaN(weight)) {
+      setValue("initialAssessment.bodyWeight", weight);
+      setValue("initialAssessment.bodyWeightInput", weight);
+    }
+  }, [weight, setValue]);
+
+  // 골격근량과 체지방량이 입력되면 체지방률 자동 계산
+  React.useEffect(() => {
+    if (
+      bodyWeightInput !== undefined &&
+      bodyWeightInput !== null &&
+      !isNaN(bodyWeightInput) &&
+      bodyWeightInput > 0 &&
+      fatMass !== undefined &&
+      fatMass !== null &&
+      !isNaN(fatMass) &&
+      fatMass >= 0
+    ) {
+      const bodyFatPercentage = (fatMass / bodyWeightInput) * 100;
+      setValue("initialAssessment.bodyFatPercentage", parseFloat(bodyFatPercentage.toFixed(1)));
+    }
+  }, [bodyWeightInput, fatMass, setValue]);
 
   const handleRecoverySpeedChange = (value: string, checked: boolean) => {
     const currentSpeed = assessmentData?.recoverySpeed || [];

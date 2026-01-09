@@ -144,40 +144,44 @@ export default function NewInitialAssessmentPage() {
           category: "STRENGTH",
           name: formData.strengthAlternative === "D-1" ? "박스 스쿼트" : "고블릿 스쿼트",
           details: {
-            grade: formData.strengthAlternative,
+            grade: formData.strengthAlternative || undefined,
           },
         });
-      } else if (formData.strengthGrade !== "D") {
+      } else if (formData.strengthGrade && formData.strengthGrade !== "D" && formData.strengthGrade !== "") {
         items.push({
           category: "STRENGTH",
           name: "체중 스쿼트",
           details: {
-            grade: formData.strengthGrade,
+            grade: formData.strengthGrade || undefined,
           },
         });
       }
 
       // 2. 심폐 지구력
-      items.push({
-        category: "CARDIO",
-        name: "스텝 테스트",
-        details: {
-          grade: formData.cardioGrade,
-          recoverySpeed:
-            formData.cardioGrade === "B" && formData.recoverySpeed.length > 0
-              ? formData.recoverySpeed
-              : undefined,
-        },
-      });
+      if (formData.cardioGrade && formData.cardioGrade !== "") {
+        items.push({
+          category: "CARDIO",
+          name: "스텝 테스트",
+          details: {
+            grade: formData.cardioGrade || undefined,
+            recoverySpeed:
+              formData.cardioGrade === "B" && formData.recoverySpeed.length > 0
+                ? formData.recoverySpeed
+                : undefined,
+          },
+        });
+      }
 
       // 3. 근지구력
-      items.push({
-        category: "ENDURANCE",
-        name: "플랭크",
-        details: {
-          grade: formData.enduranceGrade,
-        },
-      });
+      if (formData.enduranceGrade && formData.enduranceGrade !== "") {
+        items.push({
+          category: "ENDURANCE",
+          name: "플랭크",
+          details: {
+            grade: formData.enduranceGrade || undefined,
+          },
+        });
+      }
 
       // 4. 유연성
       const flexibilityItems = Object.entries(formData.flexibilityItems)
@@ -198,27 +202,31 @@ export default function NewInitialAssessmentPage() {
       }
 
       // 5. 체성분
-      items.push({
-        category: "BODY",
-        name: "인바디",
-        value: formData.bodyWeightInput || formData.bodyWeight,
-        unit: "kg",
-        details: {
-          muscleMass: formData.muscleMass,
-          fatMass: formData.fatMass,
-          bodyFatPercentage: formData.bodyFatPercentage,
-        },
-      });
+      if (formData.muscleMass && formData.fatMass && formData.bodyFatPercentage) {
+        items.push({
+          category: "BODY",
+          name: "인바디",
+          value: formData.bodyWeightInput || formData.bodyWeight,
+          unit: "kg",
+          details: {
+            muscleMass: formData.muscleMass,
+            fatMass: formData.fatMass,
+            bodyFatPercentage: formData.bodyFatPercentage,
+          },
+        });
+      }
 
       // 6. 안정성
-      items.push({
-        category: "STABILITY",
-        name: "OHSA",
-        details: {
-          ohsa: formData.ohsa === "" ? undefined : (formData.ohsa as "A" | "B" | "C" | undefined),
-          pain: formData.pain === "" ? undefined : (formData.pain as "none" | "present" | undefined),
-        },
-      });
+      if (formData.ohsa && formData.ohsa !== "" && formData.pain && formData.pain !== "") {
+        items.push({
+          category: "STABILITY",
+          name: "OHSA",
+          details: {
+            ohsa: formData.ohsa === "" ? undefined : (formData.ohsa as "A" | "B" | "C" | undefined),
+            pain: formData.pain === "" ? undefined : (formData.pain as "none" | "present" | undefined),
+          },
+        });
+      }
 
       const requestData: CreateAssessmentRequest = {
         assessmentType: "INITIAL",

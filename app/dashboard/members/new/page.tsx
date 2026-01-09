@@ -85,223 +85,274 @@ export default function NewMemberPage() {
 
       const memberResponse = await memberApi.createMember(cleanedMemberData);
       const memberId = memberResponse.id;
+      let memberCreated = true; // 회원이 생성되었는지 추적
 
-      // 2. 초기 평가 및 유연성 평가 생성 (있는 경우)
-      // POST /api/members/{memberId}/assessments
-      if (
-        initialAssessment &&
-        initialAssessment.items &&
-        initialAssessment.items.length > 0
-      ) {
-        setSubmitProgress("평가 항목 등록 중...");
+      try {
+        // 2. 초기 평가 및 유연성 평가 생성 (있는 경우)
+        // POST /api/members/{memberId}/assessments
+        if (
+          initialAssessment &&
+          initialAssessment.items &&
+          initialAssessment.items.length > 0
+        ) {
+          setSubmitProgress("평가 항목 등록 중...");
 
-        // bodyWeight는 NaN일 수 있으므로 안전하게 처리 (DB에서는 nullable)
-        const safeBodyWeight =
-          typeof initialAssessment.bodyWeight === "number" &&
-          !Number.isNaN(initialAssessment.bodyWeight)
-            ? initialAssessment.bodyWeight
-            : undefined;
+          // bodyWeight는 NaN일 수 있으므로 안전하게 처리 (DB에서는 nullable)
+          const safeBodyWeight =
+            typeof initialAssessment.bodyWeight === "number" &&
+            !Number.isNaN(initialAssessment.bodyWeight)
+              ? initialAssessment.bodyWeight
+              : undefined;
 
-        const safeCondition =
-          initialAssessment.condition &&
-          initialAssessment.condition.trim() !== ""
-            ? (initialAssessment.condition as
-                | "EXCELLENT"
-                | "GOOD"
-                | "NORMAL"
-                | "POOR")
-            : undefined;
+          const safeCondition =
+            initialAssessment.condition &&
+            initialAssessment.condition.trim() !== ""
+              ? (initialAssessment.condition as
+                  | "EXCELLENT"
+                  | "GOOD"
+                  | "NORMAL"
+                  | "POOR")
+              : undefined;
 
-        // 모든 평가 항목(유연성 포함)을 INITIAL 평가로 함께 등록
-        // 백엔드가 FLEXIBILITY enum을 지원하지 않을 경우를 대비해
-        // 에러 처리 추가
-        try {
-          const assessmentData: CreateAssessmentRequest = {
-            assessmentType: "INITIAL",
-            assessedAt: initialAssessment.assessedAt,
-            bodyWeight: safeBodyWeight,
-            condition: safeCondition,
-            trainerComment: initialAssessment.trainerComment,
-            items: initialAssessment.items, // 모든 항목 포함 (유연성 포함)
-          };
-
-          await assessmentApi.createAssessment(memberId, assessmentData);
-          setSubmitProgress(
-            `평가 항목 등록 완료 (${initialAssessment.items.length}개 항목)`
+          // FLEXIBILITY 항목 제외 (백엔드 enum 미지원)
+          const itemsWithoutFlexibility = initialAssessment.items.filter(
+            (item) => item.category !== "FLEXIBILITY"
           );
-          setAlertModal({
-            isOpen: true,
-            title: "평가 항목 등록 완료",
-            message: "평가 항목이 성공적으로 등록되었습니다.",
-            type: "success",
-          });
-        } catch (error: any) {
-          const errorMessage = error?.message || "";
-          
-          // 1. 초기 평가 중복 에러 체크 (최우선)
-          const isInitialAssessmentDuplicateError =
-            errorMessage.includes("초기 평가는 이미 존재합니다") ||
-            errorMessage.includes("초기 평가가 이미 존재합니다") ||
-            errorMessage.includes("INITIAL_ASSESSMENT_ALREADY_EXISTS") ||
-            errorMessage.includes("initial assessment already exists");
 
-          if (isInitialAssessmentDuplicateError) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn(
-                "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
-              );
-            }
-            // 이미 초기 평가가 존재하므로 성공으로 처리
-            setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
-            // 중복 에러이지만 이미 생성되었으므로 성공으로 처리하고 계속 진행
-            return;
+          if (itemsWithoutFlexibility.length === 0) {
+            throw new Error(
+              "등록 가능한 평가 항목이 없습니다. (유연성 항목은 현재 지원되지 않습니다)"
+            );
           }
 
-          // 2. FLEXIBILITY enum 에러 체크
-          const isFlexibilityEnumError =
-            errorMessage.includes(
-              "invalid input value for enum category_type"
-            ) ||
-            (errorMessage.includes("FLEXIBILITY") &&
-              errorMessage.includes("enum"));
+          // 모든 평가 항목(유연성 제외)을 INITIAL 평가로 함께 등록
+          try {
+            const assessmentData: CreateAssessmentRequest = {
+              assessmentType: "INITIAL",
+              assessedAt: initialAssessment.assessedAt,
+              bodyWeight: safeBodyWeight,
+              condition: safeCondition,
+              trainerComment: initialAssessment.trainerComment,
+              items: itemsWithoutFlexibility, // 유연성 항목 제외
+            };
 
-          if (isFlexibilityEnumError) {
-            console.warn(
-              "[New Member] FLEXIBILITY enum 에러 감지. 유연성 항목을 제외하고 재시도합니다."
+            await assessmentApi.createAssessment(memberId, assessmentData);
+
+            const flexibilityCount = initialAssessment.items.filter(
+              (item) => item.category === "FLEXIBILITY"
+            ).length;
+
+            const successMessage =
+              flexibilityCount > 0
+                ? `평가 항목이 성공적으로 등록되었습니다.\n(유연성 항목 ${flexibilityCount}개는 백엔드 미지원으로 제외됨)`
+                : "평가 항목이 성공적으로 등록되었습니다.";
+
+            setSubmitProgress(
+              `평가 항목 등록 완료 (${itemsWithoutFlexibility.length}개 항목)`
             );
+            setAlertModal({
+              isOpen: true,
+              title: "평가 항목 등록 완료",
+              message: successMessage,
+              type: "success",
+            });
+          } catch (error: any) {
+            const errorMessage = error?.message || "";
 
-            // 재시도 전에 기존 초기 평가 존재 여부 확인
-            try {
-              const existingAssessments = await assessmentApi.getAssessments(memberId);
-              const hasInitialAssessment = existingAssessments.assessments?.some(
-                (assessment) => assessment.assessmentType === "INITIAL"
-              ) || false;
+            // 1. 초기 평가 중복 에러 체크 (최우선)
+            const isInitialAssessmentDuplicateError =
+              errorMessage.includes("초기 평가는 이미 존재합니다") ||
+              errorMessage.includes("초기 평가가 이미 존재합니다") ||
+              errorMessage.includes("INITIAL_ASSESSMENT_ALREADY_EXISTS") ||
+              errorMessage.includes("initial assessment already exists");
 
-              if (hasInitialAssessment) {
-                if (process.env.NODE_ENV === "development") {
-                  console.warn(
-                    "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
-                  );
-                }
-                // 이미 초기 평가가 존재하므로 성공으로 처리
-                setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
-                return;
-              }
-            } catch (checkError) {
+            if (isInitialAssessmentDuplicateError) {
               if (process.env.NODE_ENV === "development") {
-                console.error("기존 평가 확인 실패:", checkError);
+                console.warn(
+                  "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
+                );
               }
-              // 확인 실패해도 재시도는 진행 (기존 평가가 없을 수도 있음)
+              // 이미 초기 평가가 존재하므로 성공으로 처리하고 계속 진행
+              setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
+              // return 대신 계속 진행 (부상 이력 등록도 수행)
+            } else {
+              // 중복 에러가 아닌 경우 에러를 다시 throw하여 롤백 트리거
+              throw error;
             }
 
-            // 유연성 항목 제외
-            const itemsWithoutFlexibility = initialAssessment.items.filter(
-              (item) => item.category !== "FLEXIBILITY"
-            );
+            // 2. FLEXIBILITY enum 에러 체크
+            const isFlexibilityEnumError =
+              errorMessage.includes(
+                "invalid input value for enum category_type"
+              ) ||
+              (errorMessage.includes("FLEXIBILITY") &&
+                errorMessage.includes("enum"));
 
-            if (itemsWithoutFlexibility.length > 0) {
+            if (isFlexibilityEnumError) {
+              console.warn(
+                "[New Member] FLEXIBILITY enum 에러 감지. 유연성 항목을 제외하고 재시도합니다."
+              );
+
+              // 재시도 전에 기존 초기 평가 존재 여부 확인
               try {
-                const assessmentDataWithoutFlexibility: CreateAssessmentRequest =
-                  {
-                    assessmentType: "INITIAL",
-                    assessedAt: initialAssessment.assessedAt,
-                    bodyWeight: safeBodyWeight,
-                    condition: safeCondition,
-                    trainerComment: initialAssessment.trainerComment,
-                    items: itemsWithoutFlexibility,
-                  };
-
-                await assessmentApi.createAssessment(
-                  memberId,
-                  assessmentDataWithoutFlexibility
+                const existingAssessments = await assessmentApi.getAssessments(
+                  memberId
                 );
-                setSubmitProgress(
-                  `평가 항목 등록 완료 (${itemsWithoutFlexibility.length}개 항목, 유연성 제외)`
-                );
-                setAlertModal({
-                  isOpen: true,
-                  title: "평가 항목 등록 완료",
-                  message:
-                    "평가 항목이 성공적으로 등록되었습니다.\n(유연성 항목은 백엔드 enum 미지원으로 제외됨)",
-                  type: "success",
-                });
+                const hasInitialAssessment =
+                  existingAssessments.assessments?.some(
+                    (assessment) => assessment.assessmentType === "INITIAL"
+                  ) || false;
 
-                // 개발 환경에서만 경고 표시
-                if (process.env.NODE_ENV === "development") {
-                  console.warn(
-                    "[New Member] 백엔드가 FLEXIBILITY 카테고리를 지원하지 않습니다. " +
-                      "백엔드 데이터베이스의 category_type enum에 FLEXIBILITY를 추가해야 합니다."
-                  );
-                }
-              } catch (retryError: any) {
-                const retryErrorMessage = retryError?.message || "";
-                
-                // 재시도 중에도 초기 평가 중복 에러 체크
-                const isRetryDuplicateError =
-                  retryErrorMessage.includes("초기 평가는 이미 존재합니다") ||
-                  retryErrorMessage.includes("초기 평가가 이미 존재합니다") ||
-                  retryErrorMessage.includes("INITIAL_ASSESSMENT_ALREADY_EXISTS") ||
-                  retryErrorMessage.includes("initial assessment already exists");
-
-                if (isRetryDuplicateError) {
+                if (hasInitialAssessment) {
                   if (process.env.NODE_ENV === "development") {
                     console.warn(
-                      "[New Member] 재시도 중 초기 평가 중복 감지. 성공으로 처리합니다."
+                      "[New Member] 초기 평가가 이미 존재합니다. 재시도를 건너뜁니다."
                     );
                   }
-                  // 중복이지만 이미 생성되었으므로 성공으로 처리
+                  // 이미 초기 평가가 존재하므로 성공으로 처리하고 계속 진행
                   setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
-                  return;
+                  // return 대신 계속 진행 (부상 이력 등록도 수행)
+                } else {
+                  // 기존 평가가 없으므로 재시도 진행
                 }
+              } catch (checkError) {
+                if (process.env.NODE_ENV === "development") {
+                  console.error("기존 평가 확인 실패:", checkError);
+                }
+                // 확인 실패해도 재시도는 진행 (기존 평가가 없을 수도 있음)
+              }
 
-                console.error("평가 항목 등록 재시도 실패:", retryError);
+              // 유연성 항목 제외
+              const itemsWithoutFlexibility = initialAssessment!.items.filter(
+                (item) => item.category !== "FLEXIBILITY"
+              );
+
+              if (itemsWithoutFlexibility.length > 0) {
+                try {
+                  const assessmentDataWithoutFlexibility: CreateAssessmentRequest =
+                    {
+                      assessmentType: "INITIAL",
+                      assessedAt: initialAssessment!.assessedAt,
+                      bodyWeight: safeBodyWeight,
+                      condition: safeCondition,
+                      trainerComment: initialAssessment!.trainerComment,
+                      items: itemsWithoutFlexibility,
+                    };
+
+                  await assessmentApi.createAssessment(
+                    memberId,
+                    assessmentDataWithoutFlexibility
+                  );
+                  setSubmitProgress(
+                    `평가 항목 등록 완료 (${itemsWithoutFlexibility.length}개 항목, 유연성 제외)`
+                  );
+                  setAlertModal({
+                    isOpen: true,
+                    title: "평가 항목 등록 완료",
+                    message:
+                      "평가 항목이 성공적으로 등록되었습니다.\n(유연성 항목은 백엔드 enum 미지원으로 제외됨)",
+                    type: "success",
+                  });
+
+                  // 개발 환경에서만 경고 표시
+                  if (process.env.NODE_ENV === "development") {
+                    console.warn(
+                      "[New Member] 백엔드가 FLEXIBILITY 카테고리를 지원하지 않습니다. " +
+                        "백엔드 데이터베이스의 category_type enum에 FLEXIBILITY를 추가해야 합니다."
+                    );
+                  }
+                } catch (retryError: any) {
+                  const retryErrorMessage = retryError?.message || "";
+
+                  // 재시도 중에도 초기 평가 중복 에러 체크
+                  const isRetryDuplicateError =
+                    retryErrorMessage.includes("초기 평가는 이미 존재합니다") ||
+                    retryErrorMessage.includes("초기 평가가 이미 존재합니다") ||
+                    retryErrorMessage.includes(
+                      "INITIAL_ASSESSMENT_ALREADY_EXISTS"
+                    ) ||
+                    retryErrorMessage.includes(
+                      "initial assessment already exists"
+                    );
+
+                  if (isRetryDuplicateError) {
+                    if (process.env.NODE_ENV === "development") {
+                      console.warn(
+                        "[New Member] 재시도 중 초기 평가 중복 감지. 성공으로 처리합니다."
+                      );
+                    }
+                    // 중복이지만 이미 생성되었으므로 성공으로 처리하고 계속 진행
+                    setSubmitProgress("평가 항목 등록 완료 (이미 존재)");
+                    // return 대신 계속 진행 (부상 이력 등록도 수행)
+                  } else {
+                    // 재시도 실패 시 에러 throw하여 롤백 트리거
+                    console.error("평가 항목 등록 재시도 실패:", retryError);
+                    throw new Error(
+                      `평가 항목 등록에 실패했습니다: ${
+                        retryError instanceof Error
+                          ? retryError.message
+                          : "알 수 없는 오류"
+                      }`
+                    );
+                  }
+                }
+              } else {
+                // 모든 항목이 유연성인 경우
                 throw new Error(
-                  `평가 항목 등록에 실패했습니다: ${
-                    retryError instanceof Error
-                      ? retryError.message
-                      : "알 수 없는 오류"
-                  }`
+                  "유연성 평가 항목만 있는 경우, 백엔드에서 지원하지 않아 등록할 수 없습니다."
                 );
               }
             } else {
-              // 모든 항목이 유연성인 경우
+              // 다른 에러인 경우
+              console.error("평가 항목 등록 실패:", error);
               throw new Error(
-                "유연성 평가 항목만 있는 경우, 백엔드에서 지원하지 않아 등록할 수 없습니다."
+                `평가 항목 등록에 실패했습니다: ${
+                  error instanceof Error ? error.message : "알 수 없는 오류"
+                }`
               );
             }
-          } else {
-            // 다른 에러인 경우
-            console.error("평가 항목 등록 실패:", error);
+          }
+        }
+
+        // 3. 부상 이력 생성 (있는 경우)
+        // POST /api/members/{memberId}/injuries
+        if (injuries && injuries.length > 0) {
+          setSubmitProgress(`부상 이력 등록 중... (${injuries.length}개)`);
+          try {
+            for (let i = 0; i < injuries.length; i++) {
+              const injury = injuries[i];
+              setSubmitProgress(
+                `부상 이력 등록 중... (${i + 1}/${injuries.length})`
+              );
+              await injuryApi.createInjury(memberId, injury);
+            }
+            setSubmitProgress(`부상 이력 등록 완료 (${injuries.length}개)`);
+          } catch (error) {
+            console.error("부상 이력 등록 실패:", error);
             throw new Error(
-              `평가 항목 등록에 실패했습니다: ${
+              `부상 이력 등록에 실패했습니다: ${
                 error instanceof Error ? error.message : "알 수 없는 오류"
               }`
             );
           }
         }
-      }
-
-      // 3. 부상 이력 생성 (있는 경우)
-      // POST /api/members/{memberId}/injuries
-      if (injuries && injuries.length > 0) {
-        setSubmitProgress(`부상 이력 등록 중... (${injuries.length}개)`);
-        try {
-          for (let i = 0; i < injuries.length; i++) {
-            const injury = injuries[i];
-            setSubmitProgress(
-              `부상 이력 등록 중... (${i + 1}/${injuries.length})`
+      } catch (error) {
+        // 평가 항목 또는 부상 이력 등록 실패 시 회원 삭제 (롤백)
+        if (memberCreated && memberId) {
+          try {
+            console.log("[New Member] 롤백: 회원 삭제 중...");
+            await memberApi.deleteMember(memberId);
+            console.log("[New Member] 롤백: 회원 삭제 완료");
+          } catch (deleteError) {
+            console.error(
+              "[New Member] 롤백 실패: 회원 삭제 중 오류 발생:",
+              deleteError
             );
-            await injuryApi.createInjury(memberId, injury);
+            // 삭제 실패해도 원래 에러를 다시 throw
           }
-          setSubmitProgress(`부상 이력 등록 완료 (${injuries.length}개)`);
-        } catch (error) {
-          console.error("부상 이력 등록 실패:", error);
-          throw new Error(
-            `부상 이력 등록에 실패했습니다: ${
-              error instanceof Error ? error.message : "알 수 없는 오류"
-            }`
-          );
         }
+        // 원래 에러를 다시 throw
+        throw error;
       }
 
       // 성공 시 알림 표시 후 회원 상세 페이지로 이동

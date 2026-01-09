@@ -33,6 +33,7 @@ export default function MembersPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -267,9 +268,26 @@ export default function MembersPage() {
 
       {/* 회원 수 및 페이지 크기 선택 */}
       <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-[#9ca3af]">
-          총 {filteredAndSortedMembers.length}명의 회원
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-[#9ca3af]">
+            총 {filteredAndSortedMembers.length}명의 회원
+          </p>
+          <button
+            onClick={() => {
+              setIsSelectionMode(!isSelectionMode);
+              if (!isSelectionMode) {
+                setSelectedMemberIds([]);
+              }
+            }}
+            className={`text-sm px-3 py-1 rounded transition-colors ${
+              isSelectionMode
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d24]"
+            }`}
+          >
+            선택
+          </button>
+        </div>
         <div className="flex items-center gap-2 whitespace-nowrap">
           <span className="text-sm text-[#9ca3af]">페이지당:</span>
           <Select
@@ -302,7 +320,10 @@ export default function MembersPage() {
               sortOrder={sortOrder}
               onSort={handleSort}
               selectedIds={selectedMemberIds}
-              onSelectionChange={setSelectedMemberIds}
+              onSelectionChange={
+                isSelectionMode ? setSelectedMemberIds : undefined
+              }
+              startIndex={(currentPage - 1) * pageSize}
             />
             {/* 페이지네이션 */}
             {totalPages > 1 && (
@@ -365,13 +386,18 @@ export default function MembersPage() {
       </Card>
 
       {/* 대량 작업 바 */}
-      <BulkActionsBar
-        selectedCount={selectedMemberIds.length}
-        onBulkStatusChange={handleBulkStatusChange}
-        onBulkExport={handleBulkExport}
-        onClearSelection={() => setSelectedMemberIds([])}
-        isProcessing={isBulkProcessing}
-      />
+      {isSelectionMode && (
+        <BulkActionsBar
+          selectedCount={selectedMemberIds.length}
+          onBulkStatusChange={handleBulkStatusChange}
+          onBulkExport={handleBulkExport}
+          onClearSelection={() => {
+            setSelectedMemberIds([]);
+            setIsSelectionMode(false);
+          }}
+          isProcessing={isBulkProcessing}
+        />
+      )}
     </div>
   );
 }

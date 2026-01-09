@@ -853,7 +853,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
             variant="outline"
             size="sm"
             onClick={handlePrevMonth}
-            className="px-3 py-1"
+            className="px-3 py-1 text-[#e5e7eb]"
           >
             ←
           </Button>
@@ -864,7 +864,7 @@ export default function WorkoutCalendar({ memberId }: WorkoutCalendarProps) {
             variant="outline"
             size="sm"
             onClick={handleNextMonth}
-            className="px-3 py-1"
+            className="px-3 py-1 text-[#e5e7eb]"
           >
             →
           </Button>
