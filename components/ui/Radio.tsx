@@ -3,7 +3,7 @@ import { InputHTMLAttributes, forwardRef } from "react";
 interface RadioProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   value: string;
-  name: string;
+  name?: string;
 }
 
 const Radio = forwardRef<HTMLInputElement, RadioProps>(
