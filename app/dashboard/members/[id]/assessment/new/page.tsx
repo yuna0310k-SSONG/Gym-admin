@@ -348,6 +348,41 @@ export default function NewInitialAssessmentPage() {
 
       await assessmentApi.createAssessment(memberId, requestData);
 
+      // 초기 평가에서 입력한 키와 몸무게를 회원 정보에 업데이트
+      const updateData: { height?: number; weight?: number } = {};
+
+      if (
+        formData.height !== undefined &&
+        formData.height !== null &&
+        !isNaN(formData.height)
+      ) {
+        updateData.height = formData.height;
+      }
+
+      if (
+        formData.bodyWeight !== undefined &&
+        formData.bodyWeight !== null &&
+        !isNaN(formData.bodyWeight)
+      ) {
+        updateData.weight = formData.bodyWeight;
+      }
+
+      // 키나 몸무게가 입력된 경우에만 회원 정보 업데이트
+      if (Object.keys(updateData).length > 0) {
+        try {
+          await memberApi.updateMember(memberId, updateData);
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              "[Assessment New] 회원 정보 업데이트 완료:",
+              updateData
+            );
+          }
+        } catch (error) {
+          console.error("회원 정보 업데이트 실패:", error);
+          // 회원 정보 업데이트 실패해도 평가는 성공했으므로 계속 진행
+        }
+      }
+
       showToast("초기 평가가 생성되었습니다.", "success");
       router.push(`/dashboard/members/${memberId}`);
     } catch (error: any) {

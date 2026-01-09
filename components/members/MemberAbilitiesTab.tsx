@@ -97,25 +97,48 @@ export default function MemberAbilitiesTab({
             );
           }
 
+          // 유연성 데이터 찾기 (여러 가능한 이름 시도)
+          const flexibilityIndicator = hexagonData.indicators.find(
+            (i) =>
+              i.name === "유연성" ||
+              i.name === "Flexibility" ||
+              i.name === "flexibility" ||
+              i.name.toLowerCase().includes("유연")
+          );
+
+          // 유연성 데이터가 없거나 0인 경우 latestData에서 fallback
+          const flexibilityScore =
+            flexibilityIndicator?.score && flexibilityIndicator.score > 0
+              ? flexibilityIndicator.score
+              : latestData?.flexibilityScore || 0;
+
           return {
             strength:
               hexagonData.indicators.find((i) => i.name === "하체 근력")
-                ?.score || 0,
+                ?.score ||
+              latestData?.strengthScore ||
+              0,
             cardio:
               hexagonData.indicators.find((i) => i.name === "심폐 지구력")
-                ?.score || 0,
+                ?.score ||
+              latestData?.cardioScore ||
+              0,
             endurance:
               hexagonData.indicators.find((i) => i.name === "근지구력")
-                ?.score || 0,
-            flexibility:
-              hexagonData.indicators.find((i) => i.name === "유연성")?.score ||
+                ?.score ||
+              latestData?.enduranceScore ||
               0,
+            flexibility: flexibilityScore,
             body:
               hexagonData.indicators.find((i) => i.name === "체성분 밸런스")
-                ?.score || 0,
+                ?.score ||
+              latestData?.bodyScore ||
+              0,
             stability:
               hexagonData.indicators.find((i) => i.name === "부상 안정성")
-                ?.score || 0,
+                ?.score ||
+              latestData?.stabilityScore ||
+              0,
           };
         })()
       : latestData
@@ -140,26 +163,51 @@ export default function MemberAbilitiesTab({
 
   const initialData =
     hexagonInitial && "indicators" in hexagonInitial
-      ? {
-          strength:
-            hexagonInitial.indicators.find((i) => i.name === "하체 근력")
-              ?.score || 0,
-          cardio:
-            hexagonInitial.indicators.find((i) => i.name === "심폐 지구력")
-              ?.score || 0,
-          endurance:
-            hexagonInitial.indicators.find((i) => i.name === "근지구력")
-              ?.score || 0,
-          flexibility:
-            hexagonInitial.indicators.find((i) => i.name === "유연성")?.score ||
-            0,
-          body:
-            hexagonInitial.indicators.find((i) => i.name === "체성분 밸런스")
-              ?.score || 0,
-          stability:
-            hexagonInitial.indicators.find((i) => i.name === "부상 안정성")
-              ?.score || 0,
-        }
+      ? (() => {
+          // 유연성 데이터 찾기 (여러 가능한 이름 시도)
+          const flexibilityIndicator = hexagonInitial.indicators.find(
+            (i) =>
+              i.name === "유연성" ||
+              i.name === "Flexibility" ||
+              i.name === "flexibility" ||
+              i.name.toLowerCase().includes("유연")
+          );
+
+          // 유연성 데이터가 없거나 0인 경우 initialSnapshot에서 fallback
+          const flexibilityScore =
+            flexibilityIndicator?.score && flexibilityIndicator.score > 0
+              ? flexibilityIndicator.score
+              : initialSnapshot?.flexibilityScore || 0;
+
+          return {
+            strength:
+              hexagonInitial.indicators.find((i) => i.name === "하체 근력")
+                ?.score ||
+              initialSnapshot?.strengthScore ||
+              0,
+            cardio:
+              hexagonInitial.indicators.find((i) => i.name === "심폐 지구력")
+                ?.score ||
+              initialSnapshot?.cardioScore ||
+              0,
+            endurance:
+              hexagonInitial.indicators.find((i) => i.name === "근지구력")
+                ?.score ||
+              initialSnapshot?.enduranceScore ||
+              0,
+            flexibility: flexibilityScore,
+            body:
+              hexagonInitial.indicators.find((i) => i.name === "체성분 밸런스")
+                ?.score ||
+              initialSnapshot?.bodyScore ||
+              0,
+            stability:
+              hexagonInitial.indicators.find((i) => i.name === "부상 안정성")
+                ?.score ||
+              initialSnapshot?.stabilityScore ||
+              0,
+          };
+        })()
       : initialSnapshot
       ? {
           strength: initialSnapshot.strengthScore,
