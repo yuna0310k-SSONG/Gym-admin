@@ -127,13 +127,39 @@ export default function NewMemberPage() {
 
           // 모든 평가 항목(유연성 제외)을 INITIAL 평가로 함께 등록
           try {
+            // details 객체에서 undefined 값 제거
+            const cleanedItems = itemsWithoutFlexibility.map((item) => {
+              const cleanedItem = { ...item };
+
+              // details가 있으면 undefined 값 제거
+              if (cleanedItem.details) {
+                const cleanedDetails: any = {};
+                Object.keys(cleanedItem.details).forEach((key) => {
+                  const value = (cleanedItem.details as any)[key];
+                  if (value !== undefined && value !== null && value !== "") {
+                    cleanedDetails[key] = value;
+                  }
+                });
+
+                // 빈 객체가 아니면 details 포함
+                if (Object.keys(cleanedDetails).length > 0) {
+                  cleanedItem.details = cleanedDetails;
+                } else {
+                  delete cleanedItem.details;
+                }
+              }
+
+              return cleanedItem;
+            });
+
             const assessmentData: CreateAssessmentRequest = {
               assessmentType: "INITIAL",
               assessedAt: initialAssessment.assessedAt,
               bodyWeight: safeBodyWeight,
               condition: safeCondition,
-              trainerComment: initialAssessment.trainerComment,
-              items: itemsWithoutFlexibility, // 유연성 항목 제외
+              trainerComment:
+                initialAssessment.trainerComment?.trim() || undefined,
+              items: cleanedItems, // 정리된 항목들
             };
 
             await assessmentApi.createAssessment(memberId, assessmentData);
@@ -355,7 +381,7 @@ export default function NewMemberPage() {
         throw error;
       }
 
-      // 성공 시 알림 표시 후 회원 상세 페이지로 이동
+      // 성공 시 알림 표시 후 회원 목록 페이지로 이동
       setSubmitProgress("완료!");
       setAlertModal({
         isOpen: true,
@@ -363,7 +389,7 @@ export default function NewMemberPage() {
         message: "회원이 성공적으로 등록되었습니다.",
         type: "success",
         onConfirm: () => {
-          router.push(`/dashboard/members/${memberId}`);
+          router.push("/dashboard/members");
         },
       });
     } catch (error) {

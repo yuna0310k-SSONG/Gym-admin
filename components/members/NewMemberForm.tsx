@@ -285,27 +285,30 @@ export default function NewMemberForm({
       data.fatMass &&
       data.bodyFatPercentage !== undefined
     ) {
-      items.push({
-        category: "BODY",
-        name: "인바디",
-        value: data.bodyWeightInput || data.bodyWeight,
-        unit: "kg",
-        details: {
-          muscleMass: data.muscleMass,
-          fatMass: data.fatMass,
-          bodyFatPercentage: data.bodyFatPercentage,
-        },
-      });
+      const bodyWeight = data.bodyWeightInput || data.bodyWeight;
+      if (bodyWeight !== undefined && bodyWeight !== null && !isNaN(bodyWeight)) {
+        items.push({
+          category: "BODY",
+          name: "인바디",
+          value: bodyWeight,
+          unit: "kg",
+          details: {
+            muscleMass: data.muscleMass,
+            fatMass: data.fatMass,
+            bodyFatPercentage: data.bodyFatPercentage,
+          },
+        });
+      }
     }
 
     // 6. 안정성
-    if (data.ohsa && data.pain) {
+    if (data.ohsa && data.ohsa !== "" && data.pain && data.pain !== "") {
       items.push({
         category: "STABILITY",
         name: "OHSA",
         details: {
-          ohsa: data.ohsa,
-          pain: data.pain,
+          ohsa: data.ohsa === "" ? undefined : (data.ohsa as "A" | "B" | "C" | undefined),
+          pain: data.pain === "" ? undefined : (data.pain as "none" | "present" | undefined),
         },
       });
     }

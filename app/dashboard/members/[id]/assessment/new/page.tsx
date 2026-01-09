@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -70,6 +70,41 @@ export default function NewInitialAssessmentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // 기본 정보의 체중이 변경되면 체성분의 체중에 자동으로 채우기
+  useEffect(() => {
+    if (
+      formData.bodyWeight !== undefined &&
+      formData.bodyWeight !== null &&
+      !isNaN(formData.bodyWeight)
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        bodyWeightInput: formData.bodyWeight,
+      }));
+    }
+  }, [formData.bodyWeight]);
+
+  // 골격근량과 체지방량이 입력되면 체지방률 자동 계산
+  useEffect(() => {
+    if (
+      formData.bodyWeightInput !== undefined &&
+      formData.bodyWeightInput !== null &&
+      !isNaN(formData.bodyWeightInput) &&
+      formData.bodyWeightInput > 0 &&
+      formData.fatMass !== undefined &&
+      formData.fatMass !== null &&
+      !isNaN(formData.fatMass) &&
+      formData.fatMass >= 0
+    ) {
+      const bodyFatPercentage =
+        (formData.fatMass / formData.bodyWeightInput) * 100;
+      setFormData((prev) => ({
+        ...prev,
+        bodyFatPercentage: parseFloat(bodyFatPercentage.toFixed(1)),
+      }));
+    }
+  }, [formData.bodyWeightInput, formData.fatMass]);
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -77,46 +112,18 @@ export default function NewInitialAssessmentPage() {
       newErrors.assessedAt = "평가일을 선택해주세요.";
     }
 
-    // 하체 근력 검증
-    if (!formData.strengthGrade) {
-      newErrors.strengthGrade = "하체 근력 평가를 선택해주세요.";
-    } else if (formData.strengthGrade === "D" && !formData.strengthAlternative) {
-      newErrors.strengthAlternative = "대체 항목을 선택해주세요.";
-    }
+    // 모든 항목은 선택 사항이므로 검증하지 않음
+    // 단, 입력된 항목에 대해서만 일관성 검증
 
-    // 심폐 지구력 검증
-    if (!formData.cardioGrade) {
-      newErrors.cardioGrade = "심폐 지구력 평가를 선택해주세요.";
-    }
-
-    // 근지구력 검증
-    if (!formData.enduranceGrade) {
-      newErrors.enduranceGrade = "근지구력 평가를 선택해주세요.";
-    }
-
-    // 유연성 검증 (최소 1개 항목)
-    const flexibilityCount = Object.values(formData.flexibilityItems).filter(
-      (v) => v !== "" && v !== undefined
-    ).length;
-    if (flexibilityCount === 0) {
-      newErrors.flexibility = "유연성 평가 항목을 최소 1개 이상 선택해주세요.";
-    }
-
-    // 체성분 검증
+    // 하체 근력: 입력된 경우에만 검증
     if (
-      !formData.muscleMass ||
-      !formData.fatMass ||
-      !formData.bodyFatPercentage
+      formData.strengthGrade &&
+      formData.strengthGrade === "D" &&
+      (!formData.strengthAlternative ||
+        (formData.strengthAlternative !== "D-1" &&
+          formData.strengthAlternative !== "D-2"))
     ) {
-      newErrors.bodyComposition = "체성분 데이터를 모두 입력해주세요.";
-    }
-
-    // 안정성 검증
-    if (!formData.ohsa) {
-      newErrors.ohsa = "OHSA 평가를 선택해주세요.";
-    }
-    if (!formData.pain) {
-      newErrors.pain = "통증 체크를 선택해주세요.";
+      newErrors.strengthAlternative = "대체 항목을 선택해주세요.";
     }
 
     setErrors(newErrors);
@@ -127,9 +134,11 @@ export default function NewInitialAssessmentPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      showToast("필수 항목을 모두 입력해주세요.", "error");
+      showToast("입력한 정보를 확인해주세요.", "error");
       return;
     }
+
+    let requestData: CreateAssessmentRequest | null = null;
 
     try {
       setIsSubmitting(true);
@@ -138,32 +147,51 @@ export default function NewInitialAssessmentPage() {
       const items: CreateAssessmentRequest["items"] = [];
 
       // 1. 하체 근력
-      if (formData.strengthGrade === "D" && formData.strengthAlternative) {
+      if (
+        formData.strengthGrade === "D" &&
+        formData.strengthAlternative &&
+        (formData.strengthAlternative === "D-1" ||
+          formData.strengthAlternative === "D-2")
+      ) {
         // 대체 항목
         items.push({
           category: "STRENGTH",
-          name: formData.strengthAlternative === "D-1" ? "박스 스쿼트" : "고블릿 스쿼트",
+          name:
+            formData.strengthAlternative === "D-1"
+              ? "박스 스쿼트"
+              : "고블릿 스쿼트",
           details: {
-            grade: formData.strengthAlternative || undefined,
+            grade: formData.strengthAlternative,
           },
         });
-      } else if (formData.strengthGrade && formData.strengthGrade !== "D" && formData.strengthGrade !== "") {
+      } else if (
+        formData.strengthGrade &&
+        formData.strengthGrade !== "D" &&
+        (formData.strengthGrade === "A" ||
+          formData.strengthGrade === "B" ||
+          formData.strengthGrade === "C")
+      ) {
         items.push({
           category: "STRENGTH",
           name: "체중 스쿼트",
           details: {
-            grade: formData.strengthGrade || undefined,
+            grade: formData.strengthGrade,
           },
         });
       }
 
       // 2. 심폐 지구력
-      if (formData.cardioGrade && formData.cardioGrade !== "") {
+      if (
+        formData.cardioGrade &&
+        (formData.cardioGrade === "A" ||
+          formData.cardioGrade === "B" ||
+          formData.cardioGrade === "C")
+      ) {
         items.push({
           category: "CARDIO",
           name: "스텝 테스트",
           details: {
-            grade: formData.cardioGrade || undefined,
+            grade: formData.cardioGrade,
             recoverySpeed:
               formData.cardioGrade === "B" && formData.recoverySpeed.length > 0
                 ? formData.recoverySpeed
@@ -173,36 +201,29 @@ export default function NewInitialAssessmentPage() {
       }
 
       // 3. 근지구력
-      if (formData.enduranceGrade && formData.enduranceGrade !== "") {
+      if (
+        formData.enduranceGrade &&
+        (formData.enduranceGrade === "A" ||
+          formData.enduranceGrade === "B" ||
+          formData.enduranceGrade === "C")
+      ) {
         items.push({
           category: "ENDURANCE",
           name: "플랭크",
           details: {
-            grade: formData.enduranceGrade || undefined,
+            grade: formData.enduranceGrade,
           },
         });
       }
 
-      // 4. 유연성
-      const flexibilityItems = Object.entries(formData.flexibilityItems)
-        .filter(([_, value]) => value !== "" && value !== undefined)
-        .reduce((acc, [key, value]) => {
-          acc[key as keyof typeof acc] = value as "A" | "B" | "C";
-          return acc;
-        }, {} as Record<string, "A" | "B" | "C">);
-
-      if (Object.keys(flexibilityItems).length > 0) {
-        items.push({
-          category: "FLEXIBILITY",
-          name: "유연성 종합",
-          details: {
-            flexibilityItems,
-          },
-        });
-      }
+      // 4. 유연성은 백엔드 enum 미지원으로 제외
 
       // 5. 체성분
-      if (formData.muscleMass && formData.fatMass && formData.bodyFatPercentage) {
+      if (
+        formData.muscleMass &&
+        formData.fatMass &&
+        formData.bodyFatPercentage
+      ) {
         items.push({
           category: "BODY",
           name: "인바디",
@@ -217,38 +238,92 @@ export default function NewInitialAssessmentPage() {
       }
 
       // 6. 안정성
-      if (formData.ohsa && formData.ohsa !== "" && formData.pain && formData.pain !== "") {
+      if (
+        formData.ohsa &&
+        (formData.ohsa === "A" ||
+          formData.ohsa === "B" ||
+          formData.ohsa === "C") &&
+        formData.pain &&
+        (formData.pain === "none" || formData.pain === "present")
+      ) {
         items.push({
           category: "STABILITY",
           name: "OHSA",
           details: {
-            ohsa: formData.ohsa === "" ? undefined : (formData.ohsa as "A" | "B" | "C" | undefined),
-            pain: formData.pain === "" ? undefined : (formData.pain as "none" | "present" | undefined),
+            ohsa: formData.ohsa,
+            pain: formData.pain,
           },
         });
       }
 
-      const requestData: CreateAssessmentRequest = {
+      // items 배열 정리: details에서 undefined 값 제거
+      const cleanedItems = items.map((item) => {
+        const cleanedItem = { ...item };
+
+        if (cleanedItem.details) {
+          const cleanedDetails: any = {};
+          Object.keys(cleanedItem.details).forEach((key) => {
+            const value = (cleanedItem.details as any)[key];
+            if (value !== undefined && value !== null && value !== "") {
+              cleanedDetails[key] = value;
+            }
+          });
+
+          if (Object.keys(cleanedDetails).length > 0) {
+            cleanedItem.details = cleanedDetails;
+          } else {
+            delete cleanedItem.details;
+          }
+        }
+
+        return cleanedItem;
+      });
+
+      // FLEXIBILITY 항목 제외 (백엔드 enum 미지원)
+      const itemsWithoutFlexibility = cleanedItems.filter(
+        (item) => item.category !== "FLEXIBILITY"
+      );
+
+      // 요청 데이터 구성: undefined 값 제외
+      requestData = {
         assessmentType: "INITIAL",
         assessedAt: formData.assessedAt,
-        bodyWeight: formData.bodyWeight,
-        condition: formData.condition,
-        trainerComment: formData.trainerComment,
-        items,
+        ...(formData.bodyWeight !== undefined &&
+          formData.bodyWeight !== null &&
+          !isNaN(formData.bodyWeight) && { bodyWeight: formData.bodyWeight }),
+        ...(formData.condition && { condition: formData.condition }),
+        ...(formData.trainerComment?.trim() && {
+          trainerComment: formData.trainerComment.trim(),
+        }),
+        items: itemsWithoutFlexibility, // FLEXIBILITY 제외된 항목들 (빈 배열도 허용)
       };
+
+      // 디버깅: 전송되는 데이터 확인
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Assessment New] 전송할 평가 데이터:", requestData);
+      }
 
       await assessmentApi.createAssessment(memberId, requestData);
 
       showToast("초기 평가가 생성되었습니다.", "success");
       router.push(`/dashboard/members/${memberId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("평가 생성 실패:", error);
-      showToast(
-        error instanceof Error
-          ? error.message
-          : "평가 생성에 실패했습니다.",
-        "error"
-      );
+
+      // 에러 메시지 추출
+      const errorMessage =
+        error?.message || error?.error?.message || "평가 생성에 실패했습니다.";
+
+      // 개발 환경에서 상세 에러 로그
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Assessment New] 에러 상세:", {
+          error,
+          errorMessage,
+          requestData: requestData || "요청 데이터 구성 전 에러 발생",
+        });
+      }
+
+      showToast(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -370,7 +445,9 @@ export default function NewInitialAssessmentPage() {
                 <Radio value="D" label="수행 불가 → 대체 항목" />
               </RadioGroup>
               {errors.strengthGrade && (
-                <p className="mt-1 text-sm text-red-400">{errors.strengthGrade}</p>
+                <p className="mt-1 text-sm text-red-400">
+                  {errors.strengthGrade}
+                </p>
               )}
             </div>
 
@@ -425,7 +502,9 @@ export default function NewInitialAssessmentPage() {
                 <Radio value="C" label="조기 중단 / 리듬 붕괴" />
               </RadioGroup>
               {errors.cardioGrade && (
-                <p className="mt-1 text-sm text-red-400">{errors.cardioGrade}</p>
+                <p className="mt-1 text-sm text-red-400">
+                  {errors.cardioGrade}
+                </p>
               )}
             </div>
 
@@ -489,7 +568,8 @@ export default function NewInitialAssessmentPage() {
         <Card title="4. 유연성" className="bg-[#0f1115]">
           <div className="space-y-4">
             <p className="text-sm text-[#9ca3af] mb-4">
-              최소 1개 항목 이상 선택해주세요. <span className="text-red-400">*</span>
+              최소 1개 항목 이상 선택해주세요.{" "}
+              <span className="text-red-400">*</span>
             </p>
             {errors.flexibility && (
               <p className="text-sm text-red-400 mb-2">{errors.flexibility}</p>
@@ -725,4 +805,3 @@ export default function NewInitialAssessmentPage() {
     </div>
   );
 }
-
