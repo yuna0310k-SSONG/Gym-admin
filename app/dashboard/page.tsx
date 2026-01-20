@@ -8,10 +8,16 @@ import RecentActivityFeed, {
   type ActivityItem,
 } from "@/components/dashboard/RecentActivityFeed";
 import QuickMemberList from "@/components/dashboard/QuickMemberList";
+import DashboardKPICards from "@/components/dashboard/DashboardKPICards";
+import MemberManagementTable from "@/components/dashboard/MemberManagementTable";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { trainerApi } from "@/lib/api/trainers";
 import { memberApi } from "@/lib/api/members";
+import { goalApi } from "@/lib/api/goals";
+import { insightApi } from "@/lib/api/insights";
+import { assessmentApi } from "@/lib/api/assessments";
 import type { Member } from "@/types/api/responses";
+import type { MemberGoalResponse } from "@/types/api/responses";
 
 /* =========================
    서브 컴포넌트
@@ -235,12 +241,24 @@ function WeeklyTrend({
    메인 페이지
 ========================= */
 
+interface MemberWithGoal extends Member {
+  goal?: MemberGoalResponse | null;
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
 
   const [pendingTrainerCount, setPendingTrainerCount] = useState(0);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithGoal[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<MemberWithGoal[]>([]);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
+
+  // KPI 데이터
+  const [kpiData, setKpiData] = useState({
+    averageAchievement: 0,
+    riskMembers: 0,
+    unenteredAssessments: 0,
+  });
 
   const [todaySummary, setTodaySummary] = useState({
     newMembers: 0,
@@ -250,6 +268,7 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* =========================
      데이터 로딩
@@ -279,48 +298,135 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       setLoading(true);
 
-      const membersData = await memberApi.getMembers(1, 100);
-      setMembers(membersData.members);
+      try {
+        // 회원 목록 조회
+        const membersData = await memberApi.getMembers(1, 100);
+        const allMembers = membersData.members;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+        // 각 회원의 목표 정보 조회
+        const membersWithGoals = await Promise.all(
+          allMembers.map(async (member) => {
+            try {
+              const goal = await goalApi.get(member.id);
+              return { ...member, goal };
+            } catch (error) {
+              return { ...member, goal: null };
+            }
+          })
+        );
 
-      const todayNewMembers = membersData.members.filter((m) => {
-        const d = new Date(m.createdAt);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime() === today.getTime();
-      }).length;
+        setMembers(membersWithGoals);
+        setFilteredMembers(membersWithGoals);
 
-      setTodaySummary({
-        newMembers: todayNewMembers,
-        assessments: 0,
-        deletions: 0,
-      });
+        // KPI 데이터 계산
+        // 1. 평균 달성률 계산
+        const membersWithGoalsAndProgress = membersWithGoals.filter(
+          (m) => m.goal?.goalProgress !== undefined
+        );
+        const averageAchievement =
+          membersWithGoalsAndProgress.length > 0
+            ? Math.round(
+                membersWithGoalsAndProgress.reduce(
+                  (sum, m) => sum + (m.goal?.goalProgress || 0),
+                  0
+                ) / membersWithGoalsAndProgress.length
+              )
+            : 0;
 
-      const activities: ActivityItem[] = membersData.members
-        .slice(0, 10)
-        .map((m) => ({
-          id: `member-${m.id}`,
-          type: "MEMBER_REGISTERED",
-          memberId: m.id,
-          memberName: m.name,
-          description: `${m.name}님이 회원으로 등록되었습니다`,
-          timestamp: m.createdAt,
-          link: `/dashboard/members/${m.id}`,
-        }));
+        // 2. 위험 회원 수 조회
+        let riskMembersCount = 0;
+        try {
+          const riskData = await insightApi.getRiskMembers();
+          riskMembersCount = riskData?.total || 0;
+        } catch (error) {
+          // 위험 회원이 없거나 API가 없을 경우 진행률 40% 미만 회원을 위험으로 간주
+          riskMembersCount = membersWithGoals.filter(
+            (m) => (m.goal?.goalProgress || 0) < 40
+          ).length;
+        }
 
-      setRecentActivities(
-        activities.sort(
-          (a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        )
-      );
+        // 3. 미입력 측정 데이터 (초기 평가가 없는 회원 수)
+        let unenteredAssessments = 0;
+        for (const member of allMembers.slice(0, 50)) {
+          // 최대 50명만 체크 (성능 최적화)
+          try {
+            const assessmentsData = await assessmentApi.getAssessments(member.id);
+            const hasInitialAssessment = assessmentsData.assessments.some(
+              (a) => a.assessmentType === "INITIAL" || a.isInitial
+            );
+            if (!hasInitialAssessment) {
+              unenteredAssessments++;
+            }
+          } catch (error) {
+            // 평가가 없으면 미입력으로 간주
+            unenteredAssessments++;
+          }
+        }
 
-      setLoading(false);
+        setKpiData({
+          averageAchievement,
+          riskMembers: riskMembersCount,
+          unenteredAssessments,
+        });
+
+        // 오늘의 요약
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayNewMembers = allMembers.filter((m) => {
+          const d = new Date(m.createdAt);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime() === today.getTime();
+        }).length;
+
+        setTodaySummary({
+          newMembers: todayNewMembers,
+          assessments: 0,
+          deletions: 0,
+        });
+
+        // 최근 활동
+        const activities: ActivityItem[] = allMembers
+          .slice(0, 10)
+          .map((m) => ({
+            id: `member-${m.id}`,
+            type: "MEMBER_REGISTERED",
+            memberId: m.id,
+            memberName: m.name,
+            description: `${m.name}님이 회원으로 등록되었습니다`,
+            timestamp: m.createdAt,
+            link: `/dashboard/members/${m.id}`,
+          }));
+
+        setRecentActivities(
+          activities.sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          )
+        );
+      } catch (error) {
+        console.error("대시보드 데이터 조회 실패:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchDashboardData();
   }, []);
+
+  // 검색 필터링
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredMembers(members);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = members.filter((member) =>
+      member.name.toLowerCase().includes(query)
+    );
+    setFilteredMembers(filtered);
+  }, [searchQuery, members]);
 
   /* =========================
      UI
@@ -346,135 +452,83 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative px-4 sm:px-6 py-3 min-h-screen overflow-hidden">
-      {/* 애니메이션 배경 그라데이션 */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
-        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
-
-      {/* 헤더 */}
-      <div className="relative mb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="relative group">
-            {/* 애니메이션 그라데이션 바 */}
-            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
-            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
-
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-3 pl-4 drop-shadow-lg">
-              대시보드
-            </h1>
-            <div className="flex items-center gap-4 pl-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
-                  <svg
-                    className="relative w-5 h-5 text-blue-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-[#c9c7c7] text-sm font-medium">
-                  {formatDate(currentDateTime)}
-                </span>
-              </div>
-              <div className="w-px h-4 bg-[#374151]"></div>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full"></div>
-                  <svg
-                    className="relative w-5 h-5 text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <span className="font-mono text-green-400 font-semibold text-sm tracking-tight">
-                  {formatTime(currentDateTime)}
-                </span>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* 헤더 */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                센터 대시보드
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                관리자용 - 현재 운영 중인 타임박스 프로그램 현황
+              </p>
             </div>
-          </div>
-          {user?.role === "ADMIN" && pendingTrainerCount > 0 && (
-            <Link href="/dashboard/trainers">
-              <div className="px-5 py-3 rounded-xl border border-yellow-500/40 bg-gradient-to-r from-yellow-500/20 via-orange-500/15 to-yellow-500/20 text-sm text-yellow-300 hover:from-yellow-500/30 hover:via-orange-500/25 hover:to-yellow-500/30 transition-all duration-300 shadow-xl shadow-yellow-500/20 hover:shadow-yellow-500/30 hover:scale-105 backdrop-blur-sm">
-                <span className="flex items-center gap-2 font-semibold">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400"></span>
+            {user?.role === "ADMIN" && pendingTrainerCount > 0 && (
+              <Link href="/dashboard/trainers">
+                <div className="px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 hover:bg-yellow-100 transition-colors">
+                  <span className="flex items-center gap-2 font-medium">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span>
+                    </span>
+                    승인 대기 {pendingTrainerCount}명
                   </span>
-                  승인 대기 {pendingTrainerCount}명
-                </span>
-              </div>
-            </Link>
-          )}
+                </div>
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* 캘린더 + 오른쪽 섹션 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* 왼쪽: 캘린더 */}
-        <Card
-          title="캘린더"
-          className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
-        >
-          <DashboardCalendar />
-        </Card>
+        {/* KPI 카드 */}
+        <DashboardKPICards
+          averageAchievement={kpiData.averageAchievement}
+          riskMembers={kpiData.riskMembers}
+          unenteredAssessments={kpiData.unenteredAssessments}
+          isLoading={loading}
+        />
 
-        {/* 오른쪽: 이번 주 요약 + 회원 관리 */}
-        <div className="space-y-4">
-          <Card
-            title="이번 주 요약"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
-          >
-            <WeeklyTrend newMembers={3} assessments={2} />
-          </Card>
+        {/* 회원 관리 리스트 */}
+        <MemberManagementTable
+          members={filteredMembers}
+          isLoading={loading}
+          onSearch={setSearchQuery}
+        />
 
-          <Card
-            title="회원 관리"
-            className="bg-gradient-to-br from-[#0f1115] via-[#0f151a] to-[#0f1115] border-blue-500/30 shadow-2xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:border-blue-500/40 backdrop-blur-sm"
-          >
-            <div className="flex flex-col h-full">
-              <QuickMemberList
-                members={members.slice(0, 10)}
+        {/* 기존 기능들 (옵션) - 필요시 아래에 추가 */}
+        {false && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+              <Card
+                title="캘린더"
+                className="bg-white border border-gray-200 shadow-sm"
+              >
+                <DashboardCalendar />
+              </Card>
+
+              <Card
+                title="이번 주 요약"
+                className="bg-white border border-gray-200 shadow-sm"
+              >
+                <WeeklyTrend newMembers={3} assessments={2} />
+              </Card>
+            </div>
+
+            <Card
+              title="최근 활동"
+              className="bg-white border border-gray-200 shadow-sm mt-6"
+            >
+              <RecentActivityFeed
+                activities={recentActivities}
                 isLoading={loading}
               />
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </>
+        )}
+
+        <QuickActionButton />
       </div>
-
-      <Card
-        title="최근 활동"
-        className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-2xl shadow-black/30 backdrop-blur-sm hover:shadow-black/40 transition-shadow duration-300"
-      >
-        <RecentActivityFeed activities={recentActivities} isLoading={loading} />
-      </Card>
-
-      <QuickActionButton />
     </div>
   );
 }

@@ -9,7 +9,7 @@ Vercel 대시보드에서 다음 환경 변수를 설정해야 합니다:
 #### 필수 환경 변수
 
 ```
-NEXT_PUBLIC_API_URL=https://gym-membership-backend-5zjj.onrender.com
+NEXT_PUBLIC_API_URL=https://newgym-1qof.onrender.com
 ```
 
 **설정 방법**:
@@ -92,7 +92,7 @@ vercel --prod
   "framework": "nextjs",
   "regions": ["icn1"],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://gym-membership-backend-5zjj.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://newgym-1qof.onrender.com"
   }
 }
 ```
@@ -108,7 +108,7 @@ vercel --prod
 백엔드 API 서버 URL입니다.
 
 - **개발 환경**: `http://localhost:3001` (로컬 개발 시)
-- **프로덕션**: `https://gym-membership-backend-5zjj.onrender.com` (현재 설정)
+- **프로덕션**: `https://newgym-1qof.onrender.com` (현재 설정)
 
 **중요**: `NEXT_PUBLIC_` 접두사가 붙은 환경 변수만 클라이언트에서 접근 가능합니다.
 

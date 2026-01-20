@@ -29,22 +29,22 @@ export default function QuickActionButton() {
       <div className="relative">
         {/* 메뉴 (hover 시 표시) */}
         {isMenuOpen && (
-          <div className="absolute bottom-16 right-0 mb-2 bg-[#1a1d24] border border-[#374151] rounded-lg shadow-lg min-w-[140px]">
+          <div className="absolute bottom-16 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[140px]">
             <Link
               href="/dashboard/members/new"
-              className="block px-4 py-2 text-sm text-[#e5e7eb] hover:bg-[#0f1115] transition-colors rounded-t-lg"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-t-lg"
               onClick={() => setIsMenuOpen(false)}
             >
               회원 추가
             </Link>
-            <div className="border-t border-[#374151]">
+            <div className="border-t border-gray-200">
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
                   // 평가 등록은 회원 선택이 필요하므로 회원 목록으로 이동
                   router.push("/dashboard/members");
                 }}
-                className="block w-full text-left px-4 py-2 text-sm text-[#e5e7eb] hover:bg-[#0f1115] transition-colors rounded-b-lg"
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-b-lg"
               >
                 평가 등록
               </button>

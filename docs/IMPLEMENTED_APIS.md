@@ -1,6 +1,6 @@
 # 구현된 API 클라이언트 목록
 
-백엔드 API 문서 ([Swagger UI](https://gym-membership-backend-5zjj.onrender.com/api))를 참고하여 구현한 프론트엔드 API 클라이언트 목록입니다.
+백엔드 API 문서 ([Swagger UI](https://newgym-1qof.onrender.com/api))를 참고하여 구현한 프론트엔드 API 클라이언트 목록입니다.
 
 ---
 
@@ -167,7 +167,7 @@ await workoutRoutineApi.complete(routineId, memberId);
 
 ## 백엔드 API 문서
 
-전체 API 문서: https://gym-membership-backend-5zjj.onrender.com/api
+전체 API 문서: https://newgym-1qof.onrender.com/api
 
 ---
 

@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className="bg-[#0f1115] text-[#e5e7eb]">
+      <body className="bg-gray-50 text-gray-900">
         <QueryProvider>
           <ToastProvider>{children}</ToastProvider>
         </QueryProvider>

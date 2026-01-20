@@ -1,6 +1,6 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://gym-membership-backend-5zjj.onrender.com";
+  "https://newgym-1qof.onrender.com";
 
 // localStorage에서 토큰 가져오기
 const getAuthToken = (): string | null => {

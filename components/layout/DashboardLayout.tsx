@@ -20,7 +20,7 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0b0d12]">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
@@ -38,8 +38,8 @@ export default function DashboardLayout({
         <Header onMenuClick={toggleSidebar} />
 
         {/* Main Content */}
-        <main className="flex-1 px-6 py-6">
-          <div className="max-w-[1200px] mx-auto">{children}</div>
+        <main className="flex-1">
+          {children}
         </main>
       </div>
     </div>

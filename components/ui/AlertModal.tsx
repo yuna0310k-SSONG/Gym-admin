@@ -24,23 +24,23 @@ export default function AlertModal({
   const typeStyles = {
     info: {
       icon: "ℹ️",
-      titleColor: "text-blue-400",
-      borderColor: "border-blue-500/30",
+      titleColor: "text-blue-600",
+      borderColor: "border-blue-200",
     },
     success: {
       icon: "✅",
-      titleColor: "text-green-400",
-      borderColor: "border-green-500/30",
+      titleColor: "text-green-600",
+      borderColor: "border-green-200",
     },
     error: {
       icon: "❌",
-      titleColor: "text-red-400",
-      borderColor: "border-red-500/30",
+      titleColor: "text-red-600",
+      borderColor: "border-red-200",
     },
     warning: {
       icon: "⚠️",
-      titleColor: "text-yellow-400",
-      borderColor: "border-yellow-500/30",
+      titleColor: "text-yellow-600",
+      borderColor: "border-yellow-200",
     },
   };
 
@@ -49,7 +49,7 @@ export default function AlertModal({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div
-        className={`bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border ${style.borderColor}`}
+        className={`bg-white rounded-lg p-6 max-w-md w-full mx-4 border ${style.borderColor} shadow-lg`}
       >
         <div className="flex items-start space-x-3 mb-4">
           <span className="text-2xl">{style.icon}</span>
@@ -59,7 +59,7 @@ export default function AlertModal({
                 {title}
               </h3>
             )}
-            <p className="text-[#c9c7c7] text-sm whitespace-pre-line">
+            <p className="text-gray-700 text-sm whitespace-pre-line">
               {message}
             </p>
           </div>
