@@ -5,14 +5,18 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfbf5;
+  --foreground: #1f1f1f;
+  --ivory: #f7f3ea;
+  --ivory-bright: #ffffff;
+  --ivory-border: #dfd7c9;
+  --text-muted: #555551;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #fdfbf5;
+    --foreground: #1f1f1f;
   }
 }
 
@@ -28,6 +32,51 @@ body {
   font-family: "Nanum Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
     "Helvetica Neue", sans-serif;
+}
+
+.bg-[#0f1115],
+.bg-[#0b0d12],
+.bg-[#0f151a],
+.bg-[#1a1d24],
+.bg-[#111827],
+.bg-[#1f2933],
+.bg-[#0a0d12],
+.bg-gradient-to-tr[class*="from-[#0f1115"], .bg-gradient-to-tr[class*="via-[#1a1d24"], .bg-gradient-to-tr[class*="to-[#0f151a"] {
+  background-color: var(--ivory) !important;
+  color: var(--foreground);
+}
+
+[class*="bg-[#0f1115]"],
+[class*="bg-[#0f151a]"],
+[class*="bg-[#1a1d24]"],
+[class*="bg-[#111827]"],
+[class*="bg-[#0b0d12]"] {
+  background-color: var(--ivory) !important;
+}
+
+[class*="from-[#0f1115]"],
+[class*="from-[#0b0d12]"],
+[class*="via-[#0f1115]"],
+[class*="via-[#1a1d24]"],
+[class*="to-[#0f1115]"],
+[class*="to-[#1a1d24]"] {
+  --tw-gradient-from: var(--ivory) !important;
+  --tw-gradient-via: var(--ivory) !important;
+  --tw-gradient-to: var(--ivory) !important;
+}
+
+[class*="text-[#f9fafb]"] {
+  color: var(--foreground) !important;
+}
+
+[class*="text-[#fff]"],
+.text-white,
+.text-[#ffffff] {
+  color: var(--foreground) !important;
+}
+
+[class*="border-[#374151]"] {
+  border-color: var(--ivory-border) !important;
 }
 
 /* Date input 달력 아이콘 색상 변경 - 텍스트 색상과 동일하게 */

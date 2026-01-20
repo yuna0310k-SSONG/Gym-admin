@@ -169,65 +169,27 @@ export default function NewMemberPage() {
   };
 
   return (
-    <div className="relative px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
-      {/* 애니메이션 배경 그라데이션 */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
-        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
-
-      <div className="relative mb-4 sm:mb-6">
-        <div className="relative group">
-          {/* 애니메이션 그라데이션 바 */}
-          <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
-          <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
-
+    <div className="min-h-screen bg-[var(--background)] flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-3xl space-y-6 text-center">
+        <div className="space-y-2">
           <Link
             href="/dashboard/members"
-            className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             ← 목록으로 돌아가기
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
-            새 회원 등록
-          </h1>
-          <p className="text-[#c9c7c7] mt-2 text-sm sm:text-base pl-4">
-            회원 기본 정보를 등록합니다.
+          <h1 className="text-3xl font-bold text-gray-900">새 회원 등록</h1>
+          <p className="text-sm text-gray-600">
+            회원 기본 정보를 등록하고 초기 평가를 준비합니다.
           </p>
         </div>
-      </div>
-      <div className="max-w-4xl">
-        {errorMessage && (
-          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <div className="flex items-start">
-              <svg
-                className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="text-red-400 font-medium">등록 실패</p>
-                <p className="text-red-300 text-sm mt-1">{errorMessage}</p>
-              </div>
-              <button
-                onClick={() => setErrorMessage(null)}
-                className="text-red-400 hover:text-red-300 ml-2"
-                aria-label="에러 메시지 닫기"
-              >
+
+        <div className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] rounded-3xl shadow-xl p-6 text-left">
+          {errorMessage && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 text-red-500 mt-1 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -236,19 +198,42 @@ export default function NewMemberPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-              </button>
+                <div>
+                  <p className="text-red-600 font-semibold">등록 실패</p>
+                  <p className="text-red-500 text-sm mt-1">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="ml-auto text-red-400 hover:text-red-600"
+                  aria-label="에러 메시지 닫기"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-        <NewMemberForm onSubmit={handleSubmit} onCancel={handleCancel} />
-        {isSubmitting && (
-          <div className="mt-4 text-center">
-            <p className="text-[#c9c7c7]">{submitProgress}</p>
-          </div>
-        )}
+          )}
+          <NewMemberForm onSubmit={handleSubmit} onCancel={handleCancel} />
+          {isSubmitting && (
+            <div className="mt-4 text-center">
+              <p className="text-gray-500">{submitProgress}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Alert 모달 */}

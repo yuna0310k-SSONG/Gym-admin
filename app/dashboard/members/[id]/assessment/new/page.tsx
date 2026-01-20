@@ -432,49 +432,32 @@ export default function NewInitialAssessmentPage() {
   };
 
   return (
-    <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
-      {/* 애니메이션 배경 그라데이션 */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
-        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
-
-      <div className="relative">
-        {/* 헤더 */}
-        <div className="relative mb-6">
-          <div className="relative group">
-            {/* 애니메이션 그라데이션 바 */}
-            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
-            <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
-
-            <Link
-              href={`/dashboard/members/${memberId}`}
-              className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
-            >
-              ← 회원 상세로 돌아가기
-            </Link>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
-              {member ? `${member.name}님 초기 평가 생성` : "초기 평가 생성"}
-            </h1>
-            <p className="text-[#9ca3af] mt-2 pl-4">
-              회원의 초기 평가를 진행합니다. 모든 항목을 입력해주세요.
-            </p>
-          </div>
+    <div className="min-h-screen bg-[var(--background)] px-4 sm:px-6 py-10">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="space-y-2 text-center">
+          <Link
+            href={`/dashboard/members/${memberId}`}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ← 회원 상세로 돌아가기
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+            {member ? `${member.name}님 초기 평가 생성` : "초기 평가 생성"}
+          </h1>
+          <p className="text-sm text-gray-600">
+            회원의 초기 평가를 진행합니다. 모든 항목을 입력해주세요.
+          </p>
         </div>
 
         {/* 회원 정보 */}
         {member && (
-          <Card className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm mb-6">
+          <Card className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium text-[#9ca3af]">
                   이름
                 </label>
-                <p className="mt-1 text-[#e5e7eb]">{member.name}</p>
+                <p className="mt-1 text-gray-900">{member.name}</p>
               </div>
               {member.birthDate && (
                 <div>
@@ -557,11 +540,11 @@ export default function NewInitialAssessmentPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#c9c7c7] mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                     컨디션
                   </label>
-                  <select
-                    className="w-full px-3 py-2 bg-[#111827] border border-[#374151] rounded-lg text-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <select
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.condition || ""}
                     onChange={(e) =>
                       setFormData({
@@ -592,11 +575,11 @@ export default function NewInitialAssessmentPage() {
           {/* 1. 하체 근력 */}
           <Card
             title="1. 하체 근력"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   체중 스쿼트 수행 상태 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
@@ -624,7 +607,7 @@ export default function NewInitialAssessmentPage() {
 
               {formData.strengthGrade === "D" && (
                 <div>
-                  <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     대체 항목 <span className="text-red-400">*</span>
                   </label>
                   <RadioGroup
@@ -653,11 +636,11 @@ export default function NewInitialAssessmentPage() {
           {/* 2. 심폐 지구력 */}
           <Card
             title="2. 심폐 지구력"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   스텝 테스트 수행 상태 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
@@ -685,7 +668,7 @@ export default function NewInitialAssessmentPage() {
 
               {formData.cardioGrade === "B" && (
                 <div>
-                  <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     회복 속도 (선택)
                   </label>
                   <div className="space-y-2">
@@ -712,11 +695,11 @@ export default function NewInitialAssessmentPage() {
           {/* 3. 근지구력 */}
           <Card
             title="3. 근지구력"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   플랭크 수행 상태 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
@@ -745,7 +728,7 @@ export default function NewInitialAssessmentPage() {
           {/* 4. 유연성 */}
           <Card
             title="4. 유연성"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               <p className="text-sm text-[#9ca3af] mb-4">
@@ -759,7 +742,7 @@ export default function NewInitialAssessmentPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   좌전굴
                 </label>
                 <RadioGroup
@@ -782,7 +765,7 @@ export default function NewInitialAssessmentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   어깨 가동
                 </label>
                 <RadioGroup
@@ -805,7 +788,7 @@ export default function NewInitialAssessmentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   고관절 가동
                 </label>
                 <RadioGroup
@@ -828,7 +811,7 @@ export default function NewInitialAssessmentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   햄스트링 (선택)
                 </label>
                 <RadioGroup
@@ -855,7 +838,7 @@ export default function NewInitialAssessmentPage() {
           {/* 5. 체성분 */}
           <Card
             title="5. 체성분"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               {errors.bodyComposition && (
@@ -929,11 +912,11 @@ export default function NewInitialAssessmentPage() {
           {/* 6. 안정성 */}
           <Card
             title="6. 안정성"
-            className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm"
+            className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-lg"
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   OHSA 종합 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
@@ -956,7 +939,7 @@ export default function NewInitialAssessmentPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   통증 체크 <span className="text-red-400">*</span>
                 </label>
                 <RadioGroup
@@ -986,7 +969,7 @@ export default function NewInitialAssessmentPage() {
                 취소
               </Button>
             </Link>
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
+            <Button type="submit" variant="ivory" disabled={isSubmitting}>
               {isSubmitting ? "저장 중..." : "평가 저장"}
             </Button>
           </div>

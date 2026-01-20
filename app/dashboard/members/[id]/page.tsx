@@ -18,6 +18,8 @@ import WorkoutVolumeAnalysis from "@/components/members/WorkoutVolumeAnalysis";
 import type { Member } from "@/types/api/responses";
 import { memberApi } from "@/lib/api/members";
 import { assessmentApi } from "@/lib/api/assessments";
+import { goalApi } from "@/lib/api/goals";
+import type { MemberGoalResponse } from "@/types/api/responses";
 
 export default function MemberDetailPage() {
   const params = useParams();
@@ -29,6 +31,7 @@ export default function MemberDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInitialAssessmentAlert, setShowInitialAssessmentAlert] = useState(false);
   const [hasInitialAssessment, setHasInitialAssessment] = useState<boolean | null>(null);
+  const [memberGoal, setMemberGoal] = useState<MemberGoalResponse | null>(null);
 
   useEffect(() => {
     const fetchMember = async () => {
@@ -57,15 +60,20 @@ export default function MemberDetailPage() {
           const hasInitial = !!initialAssessment;
           setHasInitialAssessment(hasInitial);
           
-          // 초기 평가가 없으면 알림 표시
           if (!hasInitial) {
             setShowInitialAssessmentAlert(true);
           }
         } catch (error) {
           console.error("평가 목록 조회 실패:", error);
-          // 평가 목록 조회 실패 시 초기 평가가 없는 것으로 간주
           setHasInitialAssessment(false);
           setShowInitialAssessmentAlert(true);
+        }
+
+        try {
+          const goal = await goalApi.get(params.id as string);
+          setMemberGoal(goal);
+        } catch (goalError) {
+          setMemberGoal(null);
         }
       } catch (error) {
         console.error("회원 조회 실패:", error);
@@ -168,170 +176,202 @@ export default function MemberDetailPage() {
   ];
 
   return (
-    <div className="relative max-w-[1200px] mx-auto px-4 sm:px-6 py-3 sm:py-4 min-h-screen overflow-hidden">
-      {/* 애니메이션 배경 그라데이션 */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1115] via-[#0a0d12] to-[#0f1115]"></div>
-        <div className="absolute top-0 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-0 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
+    <div className="min-h-screen bg-[var(--background)] py-10">
+      <div className="max-w-[1200px] mx-auto space-y-8 px-4 sm:px-6">
+        <div className="space-y-2">
+          <Link
+            href="/dashboard/members"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ← 전체 대시보드로 돌아가기
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900">{member.name} 회원 상세</h1>
+        </div>
 
-      <div className="relative space-y-4 sm:space-y-6">
-        {/* 헤더 */}
-        <div className="relative mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative group">
-              {/* 애니메이션 그라데이션 바 */}
-              <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg shadow-blue-500/50"></div>
-              <div className="absolute -left-3 top-0 w-1.5 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-50 blur-sm"></div>
-              
-              <Link
-                href="/dashboard/members"
-                className="text-blue-400 hover:text-blue-300 text-sm mb-2 inline-block pl-4 transition-colors"
-              >
-                ← 목록으로 돌아가기
-              </Link>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent pl-4 drop-shadow-lg">
-                {member.name} 회원 상세
-              </h1>
+        <div className="flex flex-col lg:flex-row gap-5">
+          <div className="flex-1 rounded-3xl overflow-hidden shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] bg-gradient-to-r from-orange-500 to-orange-400 text-white">
+              <div className="px-6 py-8">
+                <p className="text-xs uppercase tracking-[0.3em]">main goal</p>
+                <h2 className="text-2xl sm:text-3xl font-bold mt-2">
+                  {memberGoal?.goal || "목표 미설정"}
+                </h2>
+                <p className="text-sm mt-3">
+                  {memberGoal?.goalTrainerComment || "최대 10kg 감량 목표"}
+                </p>
+                <div className="mt-8 text-5xl font-bold">{memberGoal?.goalProgress ?? 0}%</div>
+                <p className="text-sm text-orange-100 mt-1">달성</p>
+              </div>
+              <div className="bg-white text-gray-800 py-8 px-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
+                  Progress Roadmap
+                </p>
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Start</span>
+                    <span className="text-xs text-gray-500">Goal</span>
+                  </div>
+                  <div className="rounded-full bg-gray-200 h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${memberGoal?.goalProgress ?? 0}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>Current phase</span>
+                    <span>{memberGoal?.goalProgress ?? 0}%</span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-full border border-green-200 text-green-600 text-xs">
+                      상태: GREEN
+                    </span>
+                    <span className="px-3 py-1 rounded-full border border-gray-200 text-gray-600 text-xs">
+                      12주 프로그램
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 ml-auto">
-              {hasInitialAssessment === false && (
-                <Link 
-                  href={`/dashboard/members/${member.id}/assessment/new`}
-                  className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-                >
-                  초기 평가
-                </Link>
-              )}
-              <Link 
-                href={`/dashboard/members/${member.id}/edit`}
-                className="text-xs sm:text-sm text-[#9ca3af] hover:text-white hover:underline transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-              >
-                수정
-              </Link>
-              <button
-                onClick={handleDeleteClick}
-                disabled={isDeleting}
-                className="text-xs sm:text-sm text-red-400 hover:text-red-300 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg hover:bg-red-500/10"
-              >
-                삭제
-              </button>
+          </div>
+          <div className="flex-1 grid grid-cols-1 gap-6">
+            <div className="rounded-3xl bg-[var(--ivory-bright)] p-6 shadow-lg border border-[var(--ivory-border)] space-y-3">
+              <p className="text-sm text-gray-500 uppercase tracking-[0.3em]">status</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
+                  <p className="text-sm text-gray-500">회원님</p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                  GREEN
+                </span>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-400">
+                  Current phase
+                </p>
+                <p className="text-sm text-gray-600">
+                  {memberGoal?.goalProgress ?? 0}% 진행 ({memberGoal?.goalProgress ?? 0}%)
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-      {/* 목표 관리 (카드 없이) */}
-      <section>
-        <MemberGoalCard memberId={member.id} />
-      </section>
-
-      {/* 회원 정보 + 운동 캘린더 */}
-      <section>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MemberProfile member={member} />
-          <WorkoutCalendar memberId={member.id} />
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--ivory-bright)] border border-[var(--ivory-border)] rounded-3xl p-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            {hasInitialAssessment === false && (
+              <Link
+                href={`/dashboard/members/${member.id}/assessment/new`}
+                className="text-xs sm:text-sm text-gray-700 hover:text-gray-900 bg-[var(--ivory)] border border-[var(--ivory-border)] px-3 py-1.5 rounded-lg shadow-sm transition-colors"
+              >
+                초기 평가
+              </Link>
+            )}
+            <Link
+              href={`/dashboard/members/${member.id}/edit`}
+              className="text-xs sm:text-sm text-gray-700 hover:text-gray-900 bg-[var(--ivory)] border border-[var(--ivory-border)] px-3 py-1.5 rounded-lg shadow-sm transition-colors"
+            >
+              수정
+            </Link>
+          </div>
+          <button
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+            className="text-xs sm:text-sm text-red-500 hover:text-red-700 bg-white border border-red-200 px-3 py-1.5 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            삭제
+          </button>
         </div>
-      </section>
 
-      {/* PT 진행률 */}
-      <section>
-        <MemberPTSessionProgress memberId={member.id} />
-      </section>
+        <section className="space-y-6">
+          <MemberGoalCard memberId={member.id} />
 
-      {/* 탭 콘텐츠 */}
-      <section>
-        <Card className="bg-gradient-to-br from-[#0f1115] via-[#1a1d24] to-[#0f1115] border-[#374151]/50 shadow-xl shadow-black/20 backdrop-blur-sm">
-          <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-        </Card>
-      </section>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MemberProfile member={member} />
+            <WorkoutCalendar memberId={member.id} />
+          </div>
 
-      {/* 초기 평가 등록 알림 모달 */}
-      {showInitialAssessmentAlert && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-          onClick={(e) => {
-            // 배경 클릭 시 모달 닫기
-            if (e.target === e.currentTarget) {
-              setShowInitialAssessmentAlert(false);
-            }
-          }}
-        >
+          <MemberPTSessionProgress memberId={member.id} />
+
+          <Card className="bg-[var(--ivory-bright)] border border-[var(--ivory-border)] shadow-xs">
+            <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+          </Card>
+        </section>
+
+        {showInitialAssessmentAlert && (
           <div
-            className="bg-[#1a1d24] rounded-lg p-4 sm:p-6 max-w-md w-full mx-4 border border-yellow-500/30"
+            className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"
             onClick={(e) => {
-              // 모달 컨텐츠 클릭 시 이벤트 전파 방지
-              e.stopPropagation();
+              if (e.target === e.currentTarget) {
+                setShowInitialAssessmentAlert(false);
+              }
             }}
           >
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-yellow-400 mb-2">
-                초기 평가 등록 필요
-              </h3>
-              <p className="text-[#c9c7c7] text-sm">
-                해당 회원의 초기 평가가 등록되지 않았습니다.
-                <br />
-                초기 평가를 등록해주세요!
-              </p>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowInitialAssessmentAlert(false);
-                }}
-                type="button"
-              >
-                다음에
-              </Button>
-              <Button
-                variant="primary"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowInitialAssessmentAlert(false);
-                  router.push(`/dashboard/members/${member.id}/assessment/new`);
-                }}
-                type="button"
-              >
-                확인
-              </Button>
+            <div
+              className="bg-[var(--ivory-bright)] rounded-lg p-4 sm:p-6 max-w-md w-full mx-4 border border-yellow-200 shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-yellow-600 mb-2">
+                  초기 평가 등록 필요
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  해당 회원의 초기 평가가 등록되지 않았습니다.
+                  <br />
+                  초기 평가를 등록해주세요!
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowInitialAssessmentAlert(false);
+                  }}
+                  type="button"
+                >
+                  다음에
+                </Button>
+                <Button
+                  variant="ivory"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowInitialAssessmentAlert(false);
+                    router.push(`/dashboard/members/${member.id}/assessment/new`);
+                  }}
+                  type="button"
+                >
+                  확인
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* 삭제 확인 모달 */}
-      {showDeleteConfirm && (
+        {showDeleteConfirm && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"
           onClick={(e) => {
-            // 배경 클릭 시 모달 닫기
             if (e.target === e.currentTarget) {
               setShowDeleteConfirm(false);
             }
           }}
         >
           <div
-            className="bg-[#1a1d24] rounded-lg p-6 max-w-md w-full mx-4 border border-red-500/30"
-            onClick={(e) => {
-              // 모달 컨텐츠 클릭 시 이벤트 전파 방지
-              e.stopPropagation();
-            }}
+            className="bg-[var(--ivory-bright)] rounded-lg p-6 max-w-md w-full mx-4 border border-red-200 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-red-400 mb-2">
+              <h3 className="text-lg font-semibold text-red-500 mb-2">
                 회원 삭제 확인
               </h3>
-              <p className="text-[#c9c7c7] text-sm">
+              <p className="text-gray-600 text-sm">
                 해당 회원 삭제하시겠습니까?
                 <br />
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-gray-900">
                   {member.name}
                 </span>{" "}
                 회원의 모든 데이터가 삭제되며 이 작업은 되돌릴 수 없습니다.
@@ -385,7 +425,7 @@ export default function MemberDetailPage() {
             </div>
           </div>
         </div>
-      )}
+        )}
       </div>
     </div>
   );

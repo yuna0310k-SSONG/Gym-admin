@@ -90,7 +90,10 @@ export default function NewMemberForm({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       {/* 기본 정보 */}
-      <Card title="기본 정보" className="bg-[#0f1115]">
+      <Card
+        title="기본 정보"
+        className="bg-[var(--ivory-bright)] border-[var(--ivory-border)] shadow-sm"
+      >
         <div className="space-y-4">
           <Input
             label="이름"
@@ -105,12 +108,12 @@ export default function NewMemberForm({
               error={errors.birthDate?.message}
             />
             <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
                 성별
               </label>
               <select
                 {...register("gender")}
-                className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">선택 안함</option>
                 <option value="MALE">남성</option>
@@ -172,7 +175,7 @@ export default function NewMemberForm({
                   }}
                   error={errors.phone?.message}
                 />
-                <p className="text-xs text-[#9ca3af]">
+                <p className="text-xs text-gray-500">
                   하이픈(-) 없이 숫자만 입력해주세요!
                 </p>
               </div>
@@ -186,12 +189,12 @@ export default function NewMemberForm({
               error={errors.joinDate?.message}
             />
             <div>
-              <label className="block text-sm font-medium text-[#c9c7c7] mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 상태
               </label>
               <select
                 {...register("status")}
-                className="w-full px-3 py-2 bg-[#1a1d24] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 defaultValue="ACTIVE"
               >
                 <option value="ACTIVE">활성</option>
@@ -210,7 +213,7 @@ export default function NewMemberForm({
             취소
           </Button>
         )}
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="ivory">
           등록
         </Button>
       </div>
